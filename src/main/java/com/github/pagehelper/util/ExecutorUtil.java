@@ -24,8 +24,15 @@
 
 package com.github.pagehelper.util;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.ReflectUtil;
 import com.github.pagehelper.Dialect;
 import com.github.pagehelper.PageException;
+import com.github.pagehelper.async.CustomMybatisAsyncPage;
+import com.github.pagehelper.async.DateRange;
+import com.github.pagehelper.async.MybatisAsyncPage;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -34,10 +41,14 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author liuzenghui
@@ -108,7 +119,7 @@ public abstract class ExecutorUtil {
     }
 
     /**
-     * 执行自动生成的 count 查询
+     * 执行自动生成的 count 查询，根据parameter确定是否进行异步多线程count
      *
      * @param dialect
      * @param executor
@@ -123,6 +134,7 @@ public abstract class ExecutorUtil {
     public static Long executeAutoCount(Dialect dialect, Executor executor, MappedStatement countMs,
                                         Object parameter, BoundSql boundSql,
                                         RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+
         Map<String, Object> additionalParameters = getAdditionalParameter(boundSql);
         //创建 count 查询的缓存 key
         CacheKey countKey = executor.createCacheKey(countMs, parameter, RowBounds.DEFAULT, boundSql);
@@ -134,11 +146,109 @@ public abstract class ExecutorUtil {
         for (String key : additionalParameters.keySet()) {
             countBoundSql.setAdditionalParameter(key, additionalParameters.get(key));
         }
+        try {
+            //入参是MybatisAsyncPage类型，说明是Mybatis generator生成的XXXExample
+            if (parameter instanceof MybatisAsyncPage) {
+                return executeMybatisAsyncCount(executor, countMs, (Serializable) parameter, resultHandler, countKey, countBoundSql);
+            }
+            //入参是CustomMybatisAsyncPage，说明是自定义的sql入参
+            if (parameter instanceof CustomMybatisAsyncPage) {
+
+            }
+        } catch (Exception e) {
+            //执行 count 查询
+            Object countResultList = executor.query(countMs, parameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
+            Long count = (Long) ((List) countResultList).get(0);
+            return count;
+        }
+
+
         //执行 count 查询
         Object countResultList = executor.query(countMs, parameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
         Long count = (Long) ((List) countResultList).get(0);
         return count;
     }
+
+    /**
+     * 执行入参为Mybatis generator 生成的xxxExample的异步并行count
+     *
+     * @param executor
+     * @param countMs
+     * @param parameter
+     * @param resultHandler
+     * @param countKey
+     * @param countBoundSql
+     * @return
+     */
+    private static Long executeMybatisAsyncCount(Executor executor, MappedStatement countMs, Serializable parameter, ResultHandler resultHandler, CacheKey countKey, BoundSql countBoundSql) {
+        List<CompletableFuture<Long>> futureList = Lists.newArrayList();
+        //深度克隆一份入参
+        MybatisAsyncPage parameterCopy = (MybatisAsyncPage) SerializationUtils.clone(parameter);
+        //获取切片数
+        Integer splitSize = ReflectionUtil.getSplitSize(parameterCopy);
+        //获取需要切片的时间字段名称
+        String datetimeFieldValue = (String) ReflectUtil.getFieldValue(parameterCopy, "datetimeField");
+        //oredCriteria
+        List oredCriteriaValue = (List) ReflectUtil.getFieldValue(parameterCopy, "oredCriteria");
+        for (Object baseCriteria : oredCriteriaValue) {
+            //criteria
+            List criterionList = (List) ReflectUtil.getFieldValue(baseCriteria, "criteria");
+            for (Object criterion : criterionList) {
+                //condition
+                String condition = (String) ReflectUtil.getFieldValue(criterion, "condition");
+                if (Objects.equals(String.format("%s between", datetimeFieldValue), condition)) {
+                    //切片字段的开始值
+                    Object begin = ReflectUtil.getFieldValue(criterion, "value");
+                    //切片字段的结束值
+                    Object end = ReflectUtil.getFieldValue(criterion, "secondValue");
+                    //时间按照splitSize分段
+                    List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), splitSize);
+                    //未找到切分字段的范围值
+                    if (Objects.isNull(ranges)) {
+                        throw new PageException("未找到切分字段的范围值");
+                    }
+                    for (DateRange range : ranges) {
+                        ReflectUtil.setFieldValue(criterion, "value", range.getBegin());
+                        ReflectUtil.setFieldValue(criterion, "secondValue", range.getEnd());
+                        //深度克隆一份入参
+                        MybatisAsyncPage parameterSecondCopy = (MybatisAsyncPage) SerializationUtils.clone((Serializable) parameterCopy);
+                        futureList.add(CompletableFuture.supplyAsync(() -> {
+                            try {
+                                Object countResultList = executor.query(countMs, parameterSecondCopy, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
+                                return (Long) ((List) countResultList).get(0);
+                            } catch (SQLException e) {
+                                //TODO log
+                                return 0L;
+                            }
+                        }));
+                    }
+                }
+            }
+        }
+
+        if (CollectionUtil.isEmpty(futureList)) {
+            throw new PageException("切分时间字段失败，请检查入参是否可以序列化");
+        }
+        // 等待所有的future 执行完成
+        CompletableFuture
+                .allOf(futureList.toArray(new CompletableFuture[]{}))
+                .join();
+        long sum = futureList
+                .stream()
+                .mapToLong(future -> {
+                    try {
+                        return future.get();
+                    } catch (InterruptedException e) {
+                        //TODO log
+                        Thread.currentThread().interrupt();
+                    } catch (ExecutionException e) {
+                        //TODO log
+                    }
+                    return 0L;
+                }).sum();
+        return sum;
+    }
+
 
     /**
      * 分页查询
@@ -155,9 +265,9 @@ public abstract class ExecutorUtil {
      * @return
      * @throws SQLException
      */
-    public static  <E> List<E> pageQuery(Dialect dialect, Executor executor, MappedStatement ms, Object parameter,
-                                 RowBounds rowBounds, ResultHandler resultHandler,
-                                 BoundSql boundSql, CacheKey cacheKey) throws SQLException {
+    public static <E> List<E> pageQuery(Dialect dialect, Executor executor, MappedStatement ms, Object parameter,
+                                        RowBounds rowBounds, ResultHandler resultHandler,
+                                        BoundSql boundSql, CacheKey cacheKey) throws SQLException {
         //判断是否需要进行分页查询
         if (dialect.beforePage(ms, parameter, rowBounds)) {
             //生成分页的缓存 key

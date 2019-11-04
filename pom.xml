@@ -27,7 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.pagehelper</groupId>
-    <artifactId>pagehelper</artifactId>
+    <artifactId>shein-pagehelper</artifactId>
     <version>5.1.10</version>
     <packaging>jar</packaging>
 
@@ -84,6 +84,20 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
+            <version>4.0.5</version>
+        </dependency>
+
+
         <!-- test -->
         <dependency>
             <groupId>junit</groupId>
@@ -103,13 +117,14 @@
             <version>2.2.9</version>
             <scope>test</scope>
         </dependency>
-        <!--
+
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.29</version>
             <scope>test</scope>
         </dependency>
+        <!--
         <dependency>
             <groupId>com.oracle</groupId>
             <artifactId>ojdbc14</artifactId>
@@ -162,8 +177,8 @@
                     <plugin>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <source>1.6</source>
-                            <target>1.6</target>
+                            <source>1.8</source>
+                            <target>1.8</target>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -187,8 +202,8 @@
                     <plugin>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <source>1.6</source>
-                            <target>1.6</target>
+                            <source>1.8</source>
+                            <target>1.8</target>
                         </configuration>
                     </plugin>
                     <!-- Source -->
@@ -239,7 +254,7 @@
                     </plugin>
                 </plugins>
             </build>
-            <distributionManagement>
+            <!--<distributionManagement>
                 <snapshotRepository>
                     <id>oss</id>
                     <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
@@ -248,7 +263,20 @@
                     <id>oss</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
-            </distributionManagement>
+            </distributionManagement>-->
+
         </profile>
     </profiles>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>lingtian-nexus</id>
+            <name>lingtian-nexus repositiory</name>
+            <url>http://192.168.1.194:8081/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>lingtian-nexus</id>
+            <name>lingtian-nexus repositiory</name>
+            <url>http://192.168.1.194:8081/nexus/content/repositories/releases/</url>
+        </repository>
+    </distributionManagement>
 </project>

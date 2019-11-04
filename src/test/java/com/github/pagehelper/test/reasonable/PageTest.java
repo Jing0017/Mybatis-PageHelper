@@ -27,11 +27,17 @@ package com.github.pagehelper.test.reasonable;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.github.pagehelper.mapper.CountryMapper;
+import com.github.pagehelper.mapper.RsInventoryMapper;
 import com.github.pagehelper.model.Country;
+import com.github.pagehelper.model.RsInventory;
+import com.github.pagehelper.model.RsInventoryCondition;
 import com.github.pagehelper.util.MybatisReasonableHelper;
+import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.junit.Test;
 
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -43,27 +49,41 @@ public class PageTest {
     @Test
     public void testMapperWithStartPage() {
         SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
-        CountryMapper countryMapper = sqlSession.getMapper(CountryMapper.class);
+//        CountryMapper countryMapper = sqlSession.getMapper(CountryMapper.class);
+        RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
+
+            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            RsInventoryCondition condition = new RsInventoryCondition();
+            condition.createCriteria().andAddTimeBetween(begin, end);
+            condition.setDatetimeField("add_time");
+            PageHelper.startPage(1, 10);
+            List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
+            PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
+            System.out.println("总数：" + pageInfo.getTotal());
+
             //获取第20页，2条内容
             //分页插件会自动改为查询最后一页
-            PageHelper.startPage(20, 50);
+            /*PageHelper.startPage(20, 50);
             List<Country> list = countryMapper.selectAll();
             PageInfo<Country> page = new PageInfo<Country>(list);
             assertEquals(33, list.size());
             assertEquals(151, page.getStartRow());
             assertEquals(4, page.getPageNum());
-            assertEquals(183, page.getTotal());
+            assertEquals(183, page.getTotal());*/
 
             //获取第-3页，2条内容
             //由于只有7天数据，分页插件会自动改为查询最后一页
-            PageHelper.startPage(-3, 50);
+            /*PageHelper.startPage(-3, 50);
             list = countryMapper.selectAll();
             page = new PageInfo<Country>(list);
             assertEquals(50, list.size());
             assertEquals(1, page.getStartRow());
             assertEquals(1, page.getPageNum());
-            assertEquals(183, page.getTotal());
+            assertEquals(183, page.getTotal());*/
+        } catch (Exception e) {
+
         } finally {
             sqlSession.close();
         }
