@@ -7,31 +7,39 @@ import java.io.Serializable;
  * date: 2019/11/4
  * description:
  */
-public class CustomMybatisAsyncPage<T> implements Serializable {
+public class CustomMybatisAsyncPage implements Serializable {
 
     /**
      * 需要切片的字段开始值
      */
-    protected T begin;
+    protected Object splitTimeValueBegin;
 
     /**
      * 需要切片的字段的结束值
      */
-    protected T end;
+    protected Object splitTimeValueEnd;
 
-    public T getBegin() {
-        return begin;
+    public CustomMybatisAsyncPage(Object splitTimeValueBegin, Object splitTimeValueEnd) {
+        this.splitTimeValueBegin = splitTimeValueBegin;
+        this.splitTimeValueEnd = splitTimeValueEnd;
     }
 
-    public void setBegin(T begin) {
-        this.begin = begin;
+    public CustomMybatisAsyncPage() {
     }
 
-    public T getEnd() {
-        return end;
+    public Object getSplitTimeValueBegin() {
+        return splitTimeValueBegin;
     }
 
-    public void setEnd(T end) {
-        this.end = end;
+    public void setSplitTimeValueBegin(Object splitTimeValueBegin) {
+        this.splitTimeValueBegin = splitTimeValueBegin;
+    }
+
+    public Object getSplitTimeValueEnd() {
+        return splitTimeValueEnd;
+    }
+
+    public void setSplitTimeValueEnd(Object splitTimeValueEnd) {
+        this.splitTimeValueEnd = splitTimeValueEnd;
     }
 }

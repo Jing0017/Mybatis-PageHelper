@@ -108,7 +108,10 @@ public class PageInterceptor implements Interceptor {
                 resultList = executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
             }
             return dialect.afterPage(resultList, parameter, rowBounds);
-        } finally {
+        }catch (Exception e){
+            return null;
+        }
+        finally {
             if(dialect != null){
                 dialect.afterAll();
             }

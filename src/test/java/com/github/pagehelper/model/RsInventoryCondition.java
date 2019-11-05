@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * @author lvjun
  */
-@SplitSize(size = 1)
+@SplitSize(size = 10)
 public class RsInventoryCondition extends MybatisAsyncPage {
     protected String orderByClause;
 

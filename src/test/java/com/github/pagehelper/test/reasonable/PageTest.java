@@ -26,13 +26,11 @@ package com.github.pagehelper.test.reasonable;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.github.pagehelper.mapper.CountryMapper;
 import com.github.pagehelper.mapper.RsInventoryMapper;
-import com.github.pagehelper.model.Country;
 import com.github.pagehelper.model.RsInventory;
 import com.github.pagehelper.model.RsInventoryCondition;
+import com.github.pagehelper.model.RsInventoryQuery;
 import com.github.pagehelper.util.MybatisReasonableHelper;
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.junit.Test;
@@ -53,15 +51,25 @@ public class PageTest {
         RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
 
-            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            /*Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
-            condition.setDatetimeField("add_time");
+            condition.setSplitTimeField("add_time");
             PageHelper.startPage(1, 10);
             List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
+            System.out.println("总数：" + pageInfo.getTotal());*/
+
+
+            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            PageHelper.startPage(1, 10);
+            List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(RsInventoryQuery.buildQueryReq(begin, end));
+            PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             System.out.println("总数：" + pageInfo.getTotal());
+            System.out.println(rsInventories);
+
 
             //获取第20页，2条内容
             //分页插件会自动改为查询最后一页

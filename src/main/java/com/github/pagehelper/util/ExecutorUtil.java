@@ -25,14 +25,11 @@
 package com.github.pagehelper.util;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.ReflectUtil;
 import com.github.pagehelper.Dialect;
 import com.github.pagehelper.PageException;
 import com.github.pagehelper.async.CustomMybatisAsyncPage;
-import com.github.pagehelper.async.DateRange;
 import com.github.pagehelper.async.MybatisAsyncPage;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -41,12 +38,10 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -134,119 +129,81 @@ public abstract class ExecutorUtil {
     public static Long executeAutoCount(Dialect dialect, Executor executor, MappedStatement countMs,
                                         Object parameter, BoundSql boundSql,
                                         RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
-
-        Map<String, Object> additionalParameters = getAdditionalParameter(boundSql);
-        //创建 count 查询的缓存 key
-        CacheKey countKey = executor.createCacheKey(countMs, parameter, RowBounds.DEFAULT, boundSql);
-        //调用方言获取 count sql
-        String countSql = dialect.getCountSql(countMs, boundSql, parameter, rowBounds, countKey);
-        //countKey.update(countSql);
-        BoundSql countBoundSql = new BoundSql(countMs.getConfiguration(), countSql, boundSql.getParameterMappings(), parameter);
-        //当使用动态 SQL 时，可能会产生临时的参数，这些参数需要手动设置到新的 BoundSql 中
-        for (String key : additionalParameters.keySet()) {
-            countBoundSql.setAdditionalParameter(key, additionalParameters.get(key));
-        }
         try {
-            //入参是MybatisAsyncPage类型，说明是Mybatis generator生成的XXXExample
-            if (parameter instanceof MybatisAsyncPage) {
-                return executeMybatisAsyncCount(executor, countMs, (Serializable) parameter, resultHandler, countKey, countBoundSql);
-            }
-            //入参是CustomMybatisAsyncPage，说明是自定义的sql入参
-            if (parameter instanceof CustomMybatisAsyncPage) {
+            List<CompletableFuture<Long>> futureList = Lists.newArrayList();
+            List<Object> partParameterList = dialect.getSplitParameter(parameter);
 
+            for (Object partParameter : partParameterList) {
+                //使用新的参数重新生成boundSql
+                BoundSql partBoundSql = countMs.getBoundSql(partParameter);
+                CountPreparation countPreparation = new CountPreparation(dialect, executor, countMs, rowBounds, partParameter, partBoundSql).init();
+                CacheKey countKey = countPreparation.getCountKey();
+                BoundSql countBoundSql = countPreparation.getCountBoundSql();
+                futureList.add(CompletableFuture.supplyAsync(() -> {
+                    try {
+                        //执行 count 查询
+                        Object countResultList = executor.query(countMs, partParameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
+                        return (Long) ((List) countResultList).get(0);
+                    } catch (SQLException e) {
+                        //TODO log
+                        return 0L;
+                    }
+                }));
             }
+
+            if (CollectionUtil.isEmpty(futureList)) {
+                throw new PageException("切分时间字段失败，请检查入参是否可以序列化");
+            }
+            // 等待所有的future 执行完成
+            CompletableFuture
+                    .allOf(futureList.toArray(new CompletableFuture[]{}))
+                    .join();
+            long sum = futureList
+                    .stream()
+                    .mapToLong(future -> {
+                        try {
+                            return future.get();
+                        } catch (InterruptedException e) {
+                            //TODO log
+                            Thread.currentThread().interrupt();
+                        } catch (ExecutionException e) {
+                            //TODO log
+                        }
+                        return 0L;
+                    }).sum();
+            return sum;
         } catch (Exception e) {
-            //执行 count 查询
-            Object countResultList = executor.query(countMs, parameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
-            Long count = (Long) ((List) countResultList).get(0);
+            Long count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
             return count;
         }
-
-
-        //执行 count 查询
-        Object countResultList = executor.query(countMs, parameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
-        Long count = (Long) ((List) countResultList).get(0);
-        return count;
     }
 
     /**
-     * 执行入参为Mybatis generator 生成的xxxExample的异步并行count
+     * 执行自动生成的 count 查询, 单线程
      *
+     * @param dialect
      * @param executor
      * @param countMs
      * @param parameter
+     * @param boundSql
+     * @param rowBounds
      * @param resultHandler
-     * @param countKey
-     * @param countBoundSql
      * @return
+     * @throws SQLException
      */
-    private static Long executeMybatisAsyncCount(Executor executor, MappedStatement countMs, Serializable parameter, ResultHandler resultHandler, CacheKey countKey, BoundSql countBoundSql) {
-        List<CompletableFuture<Long>> futureList = Lists.newArrayList();
-        //深度克隆一份入参
-        MybatisAsyncPage parameterCopy = (MybatisAsyncPage) SerializationUtils.clone(parameter);
-        //获取切片数
-        Integer splitSize = ReflectionUtil.getSplitSize(parameterCopy);
-        //获取需要切片的时间字段名称
-        String datetimeFieldValue = (String) ReflectUtil.getFieldValue(parameterCopy, "datetimeField");
-        //oredCriteria
-        List oredCriteriaValue = (List) ReflectUtil.getFieldValue(parameterCopy, "oredCriteria");
-        for (Object baseCriteria : oredCriteriaValue) {
-            //criteria
-            List criterionList = (List) ReflectUtil.getFieldValue(baseCriteria, "criteria");
-            for (Object criterion : criterionList) {
-                //condition
-                String condition = (String) ReflectUtil.getFieldValue(criterion, "condition");
-                if (Objects.equals(String.format("%s between", datetimeFieldValue), condition)) {
-                    //切片字段的开始值
-                    Object begin = ReflectUtil.getFieldValue(criterion, "value");
-                    //切片字段的结束值
-                    Object end = ReflectUtil.getFieldValue(criterion, "secondValue");
-                    //时间按照splitSize分段
-                    List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), splitSize);
-                    //未找到切分字段的范围值
-                    if (Objects.isNull(ranges)) {
-                        throw new PageException("未找到切分字段的范围值");
-                    }
-                    for (DateRange range : ranges) {
-                        ReflectUtil.setFieldValue(criterion, "value", range.getBegin());
-                        ReflectUtil.setFieldValue(criterion, "secondValue", range.getEnd());
-                        //深度克隆一份入参
-                        MybatisAsyncPage parameterSecondCopy = (MybatisAsyncPage) SerializationUtils.clone((Serializable) parameterCopy);
-                        futureList.add(CompletableFuture.supplyAsync(() -> {
-                            try {
-                                Object countResultList = executor.query(countMs, parameterSecondCopy, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
-                                return (Long) ((List) countResultList).get(0);
-                            } catch (SQLException e) {
-                                //TODO log
-                                return 0L;
-                            }
-                        }));
-                    }
-                }
-            }
-        }
-
-        if (CollectionUtil.isEmpty(futureList)) {
-            throw new PageException("切分时间字段失败，请检查入参是否可以序列化");
-        }
-        // 等待所有的future 执行完成
-        CompletableFuture
-                .allOf(futureList.toArray(new CompletableFuture[]{}))
-                .join();
-        long sum = futureList
-                .stream()
-                .mapToLong(future -> {
-                    try {
-                        return future.get();
-                    } catch (InterruptedException e) {
-                        //TODO log
-                        Thread.currentThread().interrupt();
-                    } catch (ExecutionException e) {
-                        //TODO log
-                    }
-                    return 0L;
-                }).sum();
-        return sum;
+    private static Long doExecuteAutoCount(Dialect dialect,
+                                           Executor executor,
+                                           MappedStatement countMs,
+                                           Object parameter,
+                                           BoundSql boundSql,
+                                           RowBounds rowBounds,
+                                           ResultHandler resultHandler) throws SQLException {
+        CountPreparation countPreparation = new CountPreparation(dialect, executor, countMs, rowBounds, parameter, boundSql).init();
+        CacheKey countKey = countPreparation.getCountKey();
+        BoundSql countBoundSql = countPreparation.getCountBoundSql();
+        //执行 count 查询
+        Object countResultList = executor.query(countMs, parameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
+        return (Long) ((List) countResultList).get(0);
     }
 
 
@@ -291,4 +248,46 @@ public abstract class ExecutorUtil {
         }
     }
 
+    private static class CountPreparation {
+        private Dialect dialect;
+        private Executor executor;
+        private MappedStatement countMs;
+        private RowBounds rowBounds;
+        private Object partParameter;
+        private BoundSql partBoundSql;
+        private CacheKey countKey;
+        private BoundSql countBoundSql;
+
+        public CountPreparation(Dialect dialect, Executor executor, MappedStatement countMs, RowBounds rowBounds, Object partParameter, BoundSql partBoundSql) {
+            this.dialect = dialect;
+            this.executor = executor;
+            this.countMs = countMs;
+            this.rowBounds = rowBounds;
+            this.partParameter = partParameter;
+            this.partBoundSql = partBoundSql;
+        }
+
+        public CacheKey getCountKey() {
+            return countKey;
+        }
+
+        public BoundSql getCountBoundSql() {
+            return countBoundSql;
+        }
+
+        public CountPreparation init() {
+            Map<String, Object> additionalParameters = getAdditionalParameter(partBoundSql);
+            //创建 count 查询的缓存 key
+            countKey = executor.createCacheKey(countMs, partParameter, RowBounds.DEFAULT, partBoundSql);
+            //调用方言获取 count sql
+            String countSql = dialect.getCountSql(countMs, partBoundSql, partParameter, rowBounds, countKey);
+            //countKey.update(countSql);
+            countBoundSql = new BoundSql(countMs.getConfiguration(), countSql, partBoundSql.getParameterMappings(), partParameter);
+            //当使用动态 SQL 时，可能会产生临时的参数，这些参数需要手动设置到新的 BoundSql 中
+            for (String key : additionalParameters.keySet()) {
+                countBoundSql.setAdditionalParameter(key, additionalParameters.get(key));
+            }
+            return this;
+        }
+    }
 }

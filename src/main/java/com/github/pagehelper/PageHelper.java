@@ -133,4 +133,9 @@ public class PageHelper extends PageMethod implements Dialect {
         //20180902新增 aggregateFunctions, 允许手动添加聚合函数（影响行数）
         CountSqlParser.addAggregateFunctions(properties.getProperty("aggregateFunctions"));
     }
+
+    @Override
+    public List<Object> getSplitParameter(Object originalParameter) {
+        return autoDialect.getDelegate().getSplitParameter(originalParameter);
+    }
 }

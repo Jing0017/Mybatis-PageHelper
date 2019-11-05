@@ -41,7 +41,7 @@ public class DateSplitUtil {
                 break;
             }
             ranges.add(DateRange.buildRangeFrom(temp, temp + eachRangeLength));
-            temp += eachRangeLength;
+            temp = temp + eachRangeLength + 1;
         }
 
         return ranges;

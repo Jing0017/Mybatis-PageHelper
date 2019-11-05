@@ -2,6 +2,7 @@ package com.github.pagehelper.mapper;
 
 import com.github.pagehelper.model.RsInventory;
 import com.github.pagehelper.model.RsInventoryCondition;
+import com.github.pagehelper.model.RsInventoryQuery;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.ArrayList;
@@ -125,6 +126,13 @@ public interface RsInventoryMapper {
      * @return
      */
     int updateByPrimaryKey(RsInventory record);
+
+
+    /**
+     * @param rsInventoryQuery
+     * @return
+     */
+    List<RsInventory> queryInventory(RsInventoryQuery rsInventoryQuery);
 
 
 }

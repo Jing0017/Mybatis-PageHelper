@@ -29,6 +29,7 @@ import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.RowBounds;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -134,4 +135,13 @@ public interface Dialect {
      * @param properties 插件属性
      */
     void setProperties(Properties properties);
+
+    /**
+     * 切分参数，为异步并行count做做准备
+     * @param originalParameter
+     * @return
+     */
+    default List<Object> getSplitParameter(Object originalParameter) {
+        return Collections.singletonList(originalParameter);
+    }
 }

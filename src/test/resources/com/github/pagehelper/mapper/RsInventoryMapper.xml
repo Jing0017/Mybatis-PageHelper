@@ -386,6 +386,16 @@
             <include refid="Example_Where_Clause"/>
         </if>
     </select>
+    <select id="queryInventory" resultType="com.github.pagehelper.model.RsInventory" parameterType="com.github.pagehelper.model.RsInventoryQuery">
+        select
+        <include refid="Base_Column_List"/>
+        from rs_inventory
+        <where>
+            <if test="splitTimeValueBegin != null and splitTimeValueEnd != null">
+                add_time between #{splitTimeValueBegin} and #{splitTimeValueEnd}
+            </if>
+        </where>
+    </select>
     <update id="updateByExampleSelective" parameterType="map">
         update rs_inventory
         <set>
