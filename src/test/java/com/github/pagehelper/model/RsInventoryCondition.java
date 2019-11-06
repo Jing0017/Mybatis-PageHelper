@@ -2,6 +2,7 @@ package com.github.pagehelper.model;
 
 import com.github.pagehelper.parallel.model.MybatisPage;
 import com.github.pagehelper.parallel.annotations.SplitSize;
+import com.github.pagehelper.parallel.model.SplitDateType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import java.util.List;
 /**
  * @author lvjun
  */
-@SplitSize(size = 5)
+@SplitSize(splitByType = true, type = SplitDateType.DAY)
 public class RsInventoryCondition extends MybatisPage {
     protected String orderByClause;
 

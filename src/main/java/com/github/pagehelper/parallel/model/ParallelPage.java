@@ -13,7 +13,7 @@ public class ParallelPage implements Serializable {
 
     protected SplitDateType splitType;
 
-    protected boolean splitByType;
+    protected Boolean splitByType;
 
     public ParallelPage() {
         this.setSplitByType(false);
@@ -56,11 +56,11 @@ public class ParallelPage implements Serializable {
         this.splitType = splitType;
     }
 
-    public boolean isSplitByType() {
+    public Boolean isSplitByType() {
         return splitByType;
     }
 
-    public void setSplitByType(boolean splitByType) {
+    public void setSplitByType(Boolean splitByType) {
         this.splitByType = splitByType;
     }
 }

@@ -35,6 +35,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
+import org.apache.log4j.Logger;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
@@ -48,6 +49,8 @@ import java.util.concurrent.ExecutionException;
  * @author liuzenghui
  */
 public abstract class ExecutorUtil {
+
+    private static final Logger logger = Logger.getLogger(ExecutorUtil.class);
 
     private static Field additionalParametersField;
 
@@ -113,7 +116,7 @@ public abstract class ExecutorUtil {
     }
 
     /**
-     * 执行自动生成的 count 查询，根据parameter确定是否进行异步多线程count
+     * 执行自动生成的 count 查询
      *
      * @param dialect
      * @param executor
@@ -128,54 +131,72 @@ public abstract class ExecutorUtil {
     public static Long executeAutoCount(Dialect dialect, Executor executor, MappedStatement countMs,
                                         Object parameter, BoundSql boundSql,
                                         RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+        Long count;
         try {
-            List<CompletableFuture<Long>> futureList = Lists.newArrayList();
-            List<Object> partParameterList = dialect.getSplitParameter(parameter);
-
-            if (CollectionUtil.isEmpty(partParameterList) || Objects.equals(1, partParameterList.size())) {
-                throw new PageException("切分时间字段失败，请检查入参是否可以序列化");
-            }
-
-            for (Object partParameter : partParameterList) {
-                //使用新的参数重新生成boundSql
-                BoundSql partBoundSql = countMs.getBoundSql(partParameter);
-                CountPreparator countPreparation = new CountPreparator(dialect, executor, countMs, rowBounds, partParameter, partBoundSql).prepare();
-                CacheKey countKey = countPreparation.getCountKey();
-                BoundSql countBoundSql = countPreparation.getCountBoundSql();
-                futureList.add(CompletableFuture.supplyAsync(() -> {
-                    try {
-                        //执行 count 查询
-                        Object countResultList = executor.query(countMs, partParameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
-                        return (Long) ((List) countResultList).get(0);
-                    } catch (SQLException e) {
-                        //TODO log
-                        return 0L;
-                    }
-                }));
-            }
-
-            // 等待所有的future 执行完成
-            CompletableFuture
-                    .allOf(futureList.toArray(new CompletableFuture[]{}))
-                    .join();
-            long sum = futureList
-                    .stream()
-                    .mapToLong(future -> {
-                        try {
-                            return future.get();
-                        } catch (InterruptedException e) {
-                            //TODO log
-                            Thread.currentThread().interrupt();
-                        } catch (ExecutionException e) {
-                            //TODO log
-                        }
-                        return 0L;
-                    }).sum();
-            return sum;
+            //尝试并行count
+            count = executeAutoParallelCount(dialect, executor, countMs, parameter, rowBounds, resultHandler);
         } catch (Exception e) {
-            Long count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
-            return count;
+            logger.warn("尝试并行count失败", e);
+            count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
         }
+        return count;
+    }
+
+    /**
+     * 并行count
+     *
+     * @param dialect
+     * @param executor
+     * @param countMs
+     * @param parameter
+     * @param rowBounds
+     * @param resultHandler
+     * @return
+     */
+    private static Long executeAutoParallelCount(Dialect dialect, Executor executor, MappedStatement countMs, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) {
+        List<CompletableFuture<Long>> futureList = Lists.newArrayList();
+        List<Object> partParameterList = dialect.getSplitParameter(parameter);
+
+        if (CollectionUtil.isEmpty(partParameterList) || Objects.equals(1, partParameterList.size())) {
+            throw new PageException("切分时间字段失败，请检查指定字段是否出入且入参是否可以序列化");
+        }
+
+        for (Object partParameter : partParameterList) {
+            //使用新的参数重新生成boundSql
+            BoundSql partBoundSql = countMs.getBoundSql(partParameter);
+            CountPreparator countPreparation = new CountPreparator(dialect, executor, countMs, rowBounds, partParameter, partBoundSql).prepare();
+            CacheKey countKey = countPreparation.getCountKey();
+            BoundSql countBoundSql = countPreparation.getCountBoundSql();
+            futureList.add(CompletableFuture.supplyAsync(() -> {
+                try {
+                    //执行 count 查询
+                    Object countResultList = executor.query(countMs, partParameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
+                    return (Long) ((List) countResultList).get(0);
+                } catch (SQLException e) {
+                    logger.warn("执行并行count发生异常", e);
+                    return 0L;
+                }
+            }));
+        }
+
+        // 等待所有的future 执行完成
+        CompletableFuture
+                .allOf(futureList.toArray(new CompletableFuture[]{}))
+                .join();
+        long sum = futureList
+                .stream()
+                .mapToLong(future -> {
+                    try {
+                        return future.get();
+                    } catch (InterruptedException e) {
+                        logger.warn("执行并行count汇总时发生异常", e);
+                        Thread.currentThread().interrupt();
+                    } catch (ExecutionException e) {
+                        logger.warn("执行并行count汇总时发生异常", e);
+                    }
+                    return 0L;
+                }).sum();
+        return sum;
     }
 
     /**

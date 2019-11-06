@@ -5,7 +5,6 @@ import com.github.pagehelper.PageException;
 import com.github.pagehelper.parallel.annotations.SplitSize;
 import com.github.pagehelper.parallel.model.ParallelPage;
 import com.github.pagehelper.parallel.model.SplitDateType;
-import org.apache.commons.lang3.ObjectUtils;
 
 import java.lang.reflect.Field;
 import java.util.Objects;
@@ -64,9 +63,13 @@ public class ReflectionUtil {
         //优先获取参数中的切片配置
         Integer size = (Integer) ReflectUtil.getFieldValue(obj, "splitSize");
         SplitDateType type = (SplitDateType) ReflectUtil.getFieldValue(obj, "splitType");
-        boolean splitByType = (boolean) ReflectUtil.getFieldValue(obj, "splitByType");
-        if (ObjectUtils.allNotNull(size, type, splitByType)) {
-            return ParallelPage.createPage(size, type, splitByType);
+        Boolean splitByType = (Boolean) ReflectUtil.getFieldValue(obj, "splitByType");
+        if(splitByType && Objects.nonNull(type)){
+            return ParallelPage.createPage(size, type, true);
+        }
+
+        if(!splitByType && Objects.nonNull(size)){
+            return ParallelPage.createPage(size, type, false);
         }
 
 
@@ -82,6 +85,6 @@ public class ReflectionUtil {
         } catch (Exception e) {
             throw new PageException(e);
         }
-        return ParallelPage.createPage();
+        return ParallelPage.createPage(3);
     }
 }
