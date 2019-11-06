@@ -1,6 +1,7 @@
 package com.github.pagehelper.parallel.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * @author yanjing
@@ -22,7 +23,7 @@ public class ParallelPage implements Serializable {
 
     public static ParallelPage createPage(Integer size, SplitDateType type, Boolean splitByType) {
         ParallelPage parallelPage = new ParallelPage();
-        parallelPage.setSplitSize(size);
+        parallelPage.setSplitSize(Objects.isNull(size) ? 3 : size);
         parallelPage.setSplitType(type);
         parallelPage.setSplitByType(splitByType);
         return parallelPage;

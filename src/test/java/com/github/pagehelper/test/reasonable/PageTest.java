@@ -56,9 +56,9 @@ public class PageTest {
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
             condition.setSplitTimeField("add_time");
-//            condition.setSplitByType(true);
-//            condition.setSplitType(SplitDateType.MONTH);
-            condition.setSplitSize(5);
+            condition.setSplitByType(true);
+            condition.setSplitType(SplitDateType.DAY);
+//            condition.setSplitSize(5);
             PageHelper.startPage(1, 10);
             List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);

@@ -53,6 +53,8 @@ public class MySqlDialect extends AbstractHelperDialect {
 
     private static final Logger logger = Logger.getLogger(MySqlDialect.class);
 
+    private Integer maxSplitSize = 10;
+
     @Override
     public Object processPageParameter(MappedStatement ms, Map<String, Object> paramMap, Page page, BoundSql boundSql, CacheKey pageKey) {
         paramMap.put(PAGEPARAMETER_FIRST, page.getStartRow());
@@ -110,7 +112,7 @@ public class MySqlDialect extends AbstractHelperDialect {
                             Object begin = ReflectUtil.getFieldValue(criterion, "value");
                             Object end = ReflectUtil.getFieldValue(criterion, "secondValue");
                             //时间按照splitSize分段
-                            List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter);
+                            List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter, maxSplitSize);
                             //未找到切分字段的范围值
                             if (Objects.isNull(ranges)) {
                                 throw new PageException("未找到切分字段的范围值");
@@ -181,11 +183,25 @@ public class MySqlDialect extends AbstractHelperDialect {
         Object begin = ReflectUtil.getFieldValue(originalParameter, beginFieldName);
         Object end = ReflectUtil.getFieldValue(originalParameter, endFieldName);
         //时间按照splitSize分段
-        List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter);
+        List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter, maxSplitSize);
         //未找到切分字段的范围值
         if (Objects.isNull(ranges)) {
             throw new PageException("未找到切分字段的范围值");
         }
         return ranges;
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        super.setProperties(properties);
+
+        String maxSplitSizeFromProp = (String) properties.get("maxSplitSize");
+        if (Objects.nonNull(maxSplitSize)) {
+            try {
+                maxSplitSize = Integer.valueOf(maxSplitSizeFromProp);
+            } catch (NumberFormatException e) {
+                logger.warn(String.format("初始化maxSplitSize失败，使用默认maxSplitSize=%d", maxSplitSize), e);
+            }
+        }
     }
 }

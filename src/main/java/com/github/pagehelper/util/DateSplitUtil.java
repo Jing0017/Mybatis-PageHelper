@@ -21,8 +21,6 @@ import java.util.Objects;
  */
 public class DateSplitUtil {
 
-    public static final Integer MAX_SPLIT_SIZE = 10;
-
     public static final Long ONE_MILLISECOND = 1000000L;
 
     /**
@@ -32,7 +30,7 @@ public class DateSplitUtil {
      * @param originalParameter
      * @return
      */
-    public static List<DateRange> splitFrom(DateRange originalRange, Object originalParameter) {
+    public static List<DateRange> splitFrom(DateRange originalRange, Object originalParameter, Integer maxSplitSize) {
 
         //获取切片大小配置
         ParallelPage parallelPage = ReflectionUtil.getSplitSize(originalParameter);
@@ -40,13 +38,13 @@ public class DateSplitUtil {
         //根据时间类型切分
         if (parallelPage.isSplitByType()) {
             try {
-                return getDateRangesByType(originalRange, parallelPage);
+                return getDateRangesByType(originalRange, parallelPage, maxSplitSize);
             } catch (Exception e) {
-                return getDateRangesBySize(originalRange, parallelPage);
+                return getDateRangesBySize(originalRange, parallelPage, maxSplitSize);
             }
         } else {
             //根据时间范围为个数切分
-            return getDateRangesBySize(originalRange, parallelPage);
+            return getDateRangesBySize(originalRange, parallelPage, maxSplitSize);
         }
 
     }
@@ -59,32 +57,32 @@ public class DateSplitUtil {
      * @param parallelPage
      * @return
      */
-    private static List<DateRange> getDateRangesByType(DateRange originalRange, ParallelPage parallelPage) {
+    private static List<DateRange> getDateRangesByType(DateRange originalRange, ParallelPage parallelPage, Integer maxSplitSize) {
         LocalDateTime begin = covert2LocalDateTime(originalRange.getBegin());
         LocalDateTime end = covert2LocalDateTime(originalRange.getEnd());
         List<DateRange> ranges = Lists.newArrayList();
         while (begin.compareTo(end) < 0) {
             switch (parallelPage.getSplitType()) {
                 case DAY:
-                    checkIfBeyondMaxSplitSize(ranges);
+                    checkIfBeyondMaxSplitSize(ranges, maxSplitSize);
                     LocalDateTime temp = begin.plusDays(1);
                     ranges.add(DateRange.buildRangeFrom(covert2Date(begin), covert2Date(temp)));
                     begin = temp.plusNanos(ONE_MILLISECOND);
                     break;
                 case WEEK:
-                    checkIfBeyondMaxSplitSize(ranges);
+                    checkIfBeyondMaxSplitSize(ranges, maxSplitSize);
                     temp = begin.plusWeeks(1);
                     ranges.add(DateRange.buildRangeFrom(covert2Date(begin), covert2Date(temp)));
                     begin = temp.plusNanos(ONE_MILLISECOND);
                     break;
                 case MONTH:
-                    checkIfBeyondMaxSplitSize(ranges);
+                    checkIfBeyondMaxSplitSize(ranges, maxSplitSize);
                     temp = begin.plusMonths(1);
                     ranges.add(DateRange.buildRangeFrom(covert2Date(begin), covert2Date(temp)));
                     begin = temp.plusNanos(ONE_MILLISECOND);
                     break;
                 case YEAR:
-                    checkIfBeyondMaxSplitSize(ranges);
+                    checkIfBeyondMaxSplitSize(ranges, maxSplitSize);
                     temp = begin.plusYears(1);
                     ranges.add(DateRange.buildRangeFrom(covert2Date(begin), covert2Date(temp)));
                     begin = temp.plusNanos(ONE_MILLISECOND);
@@ -102,8 +100,8 @@ public class DateSplitUtil {
         return ranges;
     }
 
-    private static void checkIfBeyondMaxSplitSize(List<DateRange> ranges) {
-        if (ranges.size() > MAX_SPLIT_SIZE) {
+    private static void checkIfBeyondMaxSplitSize(List<DateRange> ranges, Integer maxSplitSize) {
+        if (ranges.size() > maxSplitSize) {
             throw new PageException("超出最大可以切分的时间范围个数");
         }
     }
@@ -128,8 +126,8 @@ public class DateSplitUtil {
      * @param parallelPage
      * @return
      */
-    private static List<DateRange> getDateRangesBySize(DateRange originalRange, ParallelPage parallelPage) {
-        Integer size = parallelPage.getSplitSize();
+    private static List<DateRange> getDateRangesBySize(DateRange originalRange, ParallelPage parallelPage, Integer maxSplitSize) {
+        Integer size = parallelPage.getSplitSize() > maxSplitSize ? maxSplitSize : parallelPage.getSplitSize();
         List<DateRange> ranges = Lists.newArrayList();
 
         Date begin = originalRange.getBegin();
