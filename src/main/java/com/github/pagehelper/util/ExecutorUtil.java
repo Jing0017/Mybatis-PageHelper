@@ -27,8 +27,6 @@ package com.github.pagehelper.util;
 import cn.hutool.core.collection.CollectionUtil;
 import com.github.pagehelper.Dialect;
 import com.github.pagehelper.PageException;
-import com.github.pagehelper.async.CustomMybatisAsyncPage;
-import com.github.pagehelper.async.MybatisAsyncPage;
 import com.google.common.collect.Lists;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
@@ -42,6 +40,7 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -136,7 +135,7 @@ public abstract class ExecutorUtil {
             for (Object partParameter : partParameterList) {
                 //使用新的参数重新生成boundSql
                 BoundSql partBoundSql = countMs.getBoundSql(partParameter);
-                CountPreparation countPreparation = new CountPreparation(dialect, executor, countMs, rowBounds, partParameter, partBoundSql).init();
+                CountPreparator countPreparation = new CountPreparator(dialect, executor, countMs, rowBounds, partParameter, partBoundSql).prepare();
                 CacheKey countKey = countPreparation.getCountKey();
                 BoundSql countBoundSql = countPreparation.getCountBoundSql();
                 futureList.add(CompletableFuture.supplyAsync(() -> {
@@ -151,7 +150,7 @@ public abstract class ExecutorUtil {
                 }));
             }
 
-            if (CollectionUtil.isEmpty(futureList)) {
+            if (CollectionUtil.isEmpty(futureList) || Objects.equals(1, futureList.size())) {
                 throw new PageException("切分时间字段失败，请检查入参是否可以序列化");
             }
             // 等待所有的future 执行完成
@@ -198,7 +197,7 @@ public abstract class ExecutorUtil {
                                            BoundSql boundSql,
                                            RowBounds rowBounds,
                                            ResultHandler resultHandler) throws SQLException {
-        CountPreparation countPreparation = new CountPreparation(dialect, executor, countMs, rowBounds, parameter, boundSql).init();
+        CountPreparator countPreparation = new CountPreparator(dialect, executor, countMs, rowBounds, parameter, boundSql).prepare();
         CacheKey countKey = countPreparation.getCountKey();
         BoundSql countBoundSql = countPreparation.getCountBoundSql();
         //执行 count 查询
@@ -248,7 +247,7 @@ public abstract class ExecutorUtil {
         }
     }
 
-    private static class CountPreparation {
+    private static class CountPreparator {
         private Dialect dialect;
         private Executor executor;
         private MappedStatement countMs;
@@ -258,7 +257,7 @@ public abstract class ExecutorUtil {
         private CacheKey countKey;
         private BoundSql countBoundSql;
 
-        public CountPreparation(Dialect dialect, Executor executor, MappedStatement countMs, RowBounds rowBounds, Object partParameter, BoundSql partBoundSql) {
+        public CountPreparator(Dialect dialect, Executor executor, MappedStatement countMs, RowBounds rowBounds, Object partParameter, BoundSql partBoundSql) {
             this.dialect = dialect;
             this.executor = executor;
             this.countMs = countMs;
@@ -275,7 +274,7 @@ public abstract class ExecutorUtil {
             return countBoundSql;
         }
 
-        public CountPreparation init() {
+        public CountPreparator prepare() {
             Map<String, Object> additionalParameters = getAdditionalParameter(partBoundSql);
             //创建 count 查询的缓存 key
             countKey = executor.createCacheKey(countMs, partParameter, RowBounds.DEFAULT, partBoundSql);

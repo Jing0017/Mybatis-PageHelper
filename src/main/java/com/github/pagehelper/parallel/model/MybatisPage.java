@@ -1,13 +1,11 @@
-package com.github.pagehelper.async;
-
-import java.io.Serializable;
+package com.github.pagehelper.parallel.model;
 
 /**
  * @author yanjing
  * date: 2019/11/4
  * description:
  */
-public class MybatisAsyncPage implements Serializable {
+public class MybatisPage extends ParallelPage  {
 
     /**
      * 需要进行切片的时间字段名称

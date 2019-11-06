@@ -1,7 +1,7 @@
 package com.github.pagehelper.model;
 
-import com.github.pagehelper.async.MybatisAsyncPage;
-import com.github.pagehelper.async.SplitSize;
+import com.github.pagehelper.parallel.model.MybatisPage;
+import com.github.pagehelper.parallel.annotations.SplitSize;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -11,8 +11,8 @@ import java.util.List;
 /**
  * @author lvjun
  */
-@SplitSize(size = 10)
-public class RsInventoryCondition extends MybatisAsyncPage {
+@SplitSize(size = 5)
+public class RsInventoryCondition extends MybatisPage {
     protected String orderByClause;
 
     protected boolean distinct;

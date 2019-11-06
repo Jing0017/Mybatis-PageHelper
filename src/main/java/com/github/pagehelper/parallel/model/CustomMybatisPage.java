@@ -1,13 +1,11 @@
-package com.github.pagehelper.async;
-
-import java.io.Serializable;
+package com.github.pagehelper.parallel.model;
 
 /**
  * @author yanjing
  * date: 2019/11/4
  * description:
  */
-public class CustomMybatisAsyncPage implements Serializable {
+public class CustomMybatisPage extends ParallelPage {
 
     /**
      * 需要切片的字段开始值
@@ -19,12 +17,12 @@ public class CustomMybatisAsyncPage implements Serializable {
      */
     protected Object splitTimeValueEnd;
 
-    public CustomMybatisAsyncPage(Object splitTimeValueBegin, Object splitTimeValueEnd) {
+    public CustomMybatisPage(Object splitTimeValueBegin, Object splitTimeValueEnd) {
         this.splitTimeValueBegin = splitTimeValueBegin;
         this.splitTimeValueEnd = splitTimeValueEnd;
     }
 
-    public CustomMybatisAsyncPage() {
+    public CustomMybatisPage() {
     }
 
     public Object getSplitTimeValueBegin() {

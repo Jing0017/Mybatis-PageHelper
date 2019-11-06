@@ -29,7 +29,7 @@ import com.github.pagehelper.PageInfo;
 import com.github.pagehelper.mapper.RsInventoryMapper;
 import com.github.pagehelper.model.RsInventory;
 import com.github.pagehelper.model.RsInventoryCondition;
-import com.github.pagehelper.model.RsInventoryQuery;
+import com.github.pagehelper.parallel.model.SplitDateType;
 import com.github.pagehelper.util.MybatisReasonableHelper;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.ibatis.session.SqlSession;
@@ -51,24 +51,28 @@ public class PageTest {
         RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
 
-            /*Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
             condition.setSplitTimeField("add_time");
+            condition.setSplitByType(true);
+            condition.setSplitType(SplitDateType.MONTH);
             PageHelper.startPage(1, 10);
             List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
-            System.out.println("总数：" + pageInfo.getTotal());*/
+            System.out.println("总数：" + pageInfo.getTotal());
 
 
-            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+           /* Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             PageHelper.startPage(1, 10);
-            List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(RsInventoryQuery.buildQueryReq(begin, end));
+            RsInventoryQuery rsInventoryQuery = RsInventoryQuery.buildQueryReq(begin, end);
+            rsInventoryQuery.setSplitSize(4);
+            List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(rsInventoryQuery);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             System.out.println("总数：" + pageInfo.getTotal());
-            System.out.println(rsInventories);
+            System.out.println(rsInventories);*/
 
 
             //获取第20页，2条内容

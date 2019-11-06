@@ -1,4 +1,6 @@
-package com.github.pagehelper.async;
+package com.github.pagehelper.parallel.annotations;
+
+import com.github.pagehelper.parallel.model.SplitDateType;
 
 import java.lang.annotation.*;
 
@@ -13,4 +15,8 @@ import java.lang.annotation.*;
 public @interface SplitSize {
 
     int size() default 3;
+
+    SplitDateType type() default SplitDateType.DAY;
+
+    boolean splitByType() default false;
 }

@@ -1,4 +1,4 @@
-package com.github.pagehelper.async;
+package com.github.pagehelper.parallel.model;
 
 import java.util.Date;
 

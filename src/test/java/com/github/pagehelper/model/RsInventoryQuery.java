@@ -1,7 +1,7 @@
 package com.github.pagehelper.model;
 
-import com.github.pagehelper.async.CustomMybatisAsyncPage;
-import com.github.pagehelper.async.SplitSize;
+import com.github.pagehelper.parallel.model.CustomMybatisPage;
+import com.github.pagehelper.parallel.annotations.SplitSize;
 
 import java.util.Date;
 
@@ -11,7 +11,7 @@ import java.util.Date;
  * description:
  */
 @SplitSize(size = 10)
-public class RsInventoryQuery extends CustomMybatisAsyncPage {
+public class RsInventoryQuery extends CustomMybatisPage {
 
     private RsInventoryQuery(Date begin, Date end) {
         super(begin, end);

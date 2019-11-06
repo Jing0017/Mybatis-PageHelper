@@ -27,9 +27,9 @@ package com.github.pagehelper.dialect.helper;
 import cn.hutool.core.util.ReflectUtil;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageException;
-import com.github.pagehelper.async.CustomMybatisAsyncPage;
-import com.github.pagehelper.async.DateRange;
-import com.github.pagehelper.async.MybatisAsyncPage;
+import com.github.pagehelper.parallel.model.CustomMybatisPage;
+import com.github.pagehelper.parallel.model.DateRange;
+import com.github.pagehelper.parallel.model.MybatisPage;
 import com.github.pagehelper.dialect.AbstractHelperDialect;
 import com.github.pagehelper.util.DateSplitUtil;
 import com.github.pagehelper.util.MetaObjectUtil;
@@ -90,9 +90,9 @@ public class MySqlDialect extends AbstractHelperDialect {
 
         List<Object> partParameterList = Lists.newArrayList();
         //入参是MybatisAsyncPage类型，说明是Mybatis generator生成的XXXExample
-        if (originalParameter instanceof MybatisAsyncPage) {
+        if (originalParameter instanceof MybatisPage) {
             //深度克隆一份入参
-            MybatisAsyncPage parameterCopy = (MybatisAsyncPage) SerializationUtils.clone((Serializable) originalParameter);
+            MybatisPage parameterCopy = (MybatisPage) SerializationUtils.clone((Serializable) originalParameter);
             //获取需要切片的时间字段名称
             String datetimeFieldValue = (String) ReflectUtil.getFieldValue(parameterCopy, "splitTimeField");
             //oredCriteria
@@ -108,10 +108,8 @@ public class MySqlDialect extends AbstractHelperDialect {
                         Object begin = ReflectUtil.getFieldValue(criterion, "value");
                         //切片字段的结束值
                         Object end = ReflectUtil.getFieldValue(criterion, "secondValue");
-                        //获取切片数
-                        Integer splitSize = ReflectionUtil.getSplitSize(originalParameter);
                         //时间按照splitSize分段
-                        List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), splitSize);
+                        List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter);
                         //未找到切分字段的范围值
                         if (Objects.isNull(ranges)) {
                             throw new PageException("未找到切分字段的范围值");
@@ -121,7 +119,7 @@ public class MySqlDialect extends AbstractHelperDialect {
                             ReflectUtil.setFieldValue(criterion, "secondValue", range.getEnd());
 
                             //深度克隆一份入参
-                            MybatisAsyncPage parameterSecondCopy = (MybatisAsyncPage) SerializationUtils.clone((Serializable) parameterCopy);
+                            MybatisPage parameterSecondCopy = (MybatisPage) SerializationUtils.clone((Serializable) parameterCopy);
                             partParameterList.add(parameterSecondCopy);
 
                         }
@@ -131,23 +129,14 @@ public class MySqlDialect extends AbstractHelperDialect {
         }
 
         //入参是CustomMybatisAsyncPage，说明是自定义的sql入参
-        if (originalParameter instanceof CustomMybatisAsyncPage) {
-            Object begin = ReflectUtil.getFieldValue(originalParameter, "splitTimeValueBegin");
-            Object end = ReflectUtil.getFieldValue(originalParameter, "splitTimeValueEnd");
-            //获取切片数
-            Integer splitSize = ReflectionUtil.getSplitSize(originalParameter);
-            //时间按照splitSize分段
-            List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), splitSize);
-            //未找到切分字段的范围值
-            if (Objects.isNull(ranges)) {
-                throw new PageException("未找到切分字段的范围值");
-            }
+        if (originalParameter instanceof CustomMybatisPage) {
+            List<DateRange> ranges = getDateRanges(originalParameter);
             for (DateRange range : ranges) {
                 ReflectUtil.setFieldValue(originalParameter, "splitTimeValueBegin", range.getBegin());
                 ReflectUtil.setFieldValue(originalParameter, "splitTimeValueEnd", range.getEnd());
 
                 //深度克隆一份入参
-                CustomMybatisAsyncPage parameterSecondCopy = (CustomMybatisAsyncPage) SerializationUtils.clone((Serializable) originalParameter);
+                CustomMybatisPage parameterSecondCopy = (CustomMybatisPage) SerializationUtils.clone((Serializable) originalParameter);
                 partParameterList.add(parameterSecondCopy);
 
             }
@@ -157,19 +146,10 @@ public class MySqlDialect extends AbstractHelperDialect {
             Map<String, Object> parameterMap = (Map) originalParameter;
             Collection<Object> values = parameterMap.values();
             values.stream()
-                    .filter(item -> item instanceof CustomMybatisAsyncPage)
+                    .filter(item -> item instanceof CustomMybatisPage)
                     .findAny()
                     .ifPresent(item -> {
-                        Object begin = ReflectUtil.getFieldValue(item, "splitTimeValueBegin");
-                        Object end = ReflectUtil.getFieldValue(item, "splitTimeValueEnd");
-                        //获取切片数
-                        Integer splitSize = ReflectionUtil.getSplitSize(item);
-                        //时间按照splitSize分段
-                        List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), splitSize);
-                        //未找到切分字段的范围值
-                        if (Objects.isNull(ranges)) {
-                            throw new PageException("未找到切分字段的范围值");
-                        }
+                        List<DateRange> ranges = getDateRanges(item);
                         for (DateRange range : ranges) {
                             ReflectUtil.setFieldValue(item, "splitTimeValueBegin", range.getBegin());
                             ReflectUtil.setFieldValue(item, "splitTimeValueEnd", range.getEnd());
@@ -182,5 +162,17 @@ public class MySqlDialect extends AbstractHelperDialect {
         }
 
         return partParameterList;
+    }
+
+    private List<DateRange> getDateRanges(Object originalParameter) {
+        Object begin = ReflectUtil.getFieldValue(originalParameter, "splitTimeValueBegin");
+        Object end = ReflectUtil.getFieldValue(originalParameter, "splitTimeValueEnd");
+        //时间按照splitSize分段
+        List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter);
+        //未找到切分字段的范围值
+        if (Objects.isNull(ranges)) {
+            throw new PageException("未找到切分字段的范围值");
+        }
+        return ranges;
     }
 }
