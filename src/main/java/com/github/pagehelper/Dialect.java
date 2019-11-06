@@ -144,4 +144,12 @@ public interface Dialect {
     default List<Object> getSplitParameter(Object originalParameter) {
         return Collections.singletonList(originalParameter);
     }
+
+    /**
+     * 是否开启异步并行count
+     * @return
+     */
+    default Boolean parallelCountActive(){
+        return false;
+    }
 }

@@ -55,6 +55,8 @@ public class MySqlDialect extends AbstractHelperDialect {
 
     private Integer maxSplitSize = 50;
 
+    private Boolean enableParallelCount = false;
+
     @Override
     public Object processPageParameter(MappedStatement ms, Map<String, Object> paramMap, Page page, BoundSql boundSql, CacheKey pageKey) {
         paramMap.put(PAGEPARAMETER_FIRST, page.getStartRow());
@@ -192,6 +194,11 @@ public class MySqlDialect extends AbstractHelperDialect {
     }
 
     @Override
+    public Boolean parallelCountActive() {
+        return this.enableParallelCount;
+    }
+
+    @Override
     public void setProperties(Properties properties) {
         super.setProperties(properties);
 
@@ -201,6 +208,15 @@ public class MySqlDialect extends AbstractHelperDialect {
                 maxSplitSize = Integer.valueOf(maxSplitSizeFromProp);
             } catch (NumberFormatException e) {
                 logger.warn(String.format("初始化maxSplitSize失败，使用默认maxSplitSize=%d", maxSplitSize), e);
+            }
+        }
+
+        String enableParallelCount = (String) properties.get("enableParallelCount");
+        if (Objects.nonNull(enableParallelCount)) {
+            try {
+                this.enableParallelCount = Boolean.valueOf(enableParallelCount);
+            } catch (Exception e) {
+                logger.warn(String.format("初始化enableParallelCount失败，使用默认enableParallelCount=%s", this.enableParallelCount), e);
             }
         }
     }
