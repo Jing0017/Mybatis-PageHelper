@@ -92,10 +92,7 @@ public class DateSplitUtil {
             }
         }
 
-        DateRange lastRange = ranges.get(ranges.size() - 1);
-        if (lastRange.getEnd().compareTo(originalRange.getEnd()) > 0) {
-            lastRange.setEnd(originalRange.getEnd());
-        }
+        updateLastRange(originalRange, ranges);
 
         return ranges;
     }
@@ -149,6 +146,14 @@ public class DateSplitUtil {
             temp = temp + eachRangeLength + 1;
         }
 
+        updateLastRange(originalRange, ranges);
         return ranges;
+    }
+
+    private static void updateLastRange(DateRange originalRange, List<DateRange> ranges) {
+        DateRange lastRange = ranges.get(ranges.size() - 1);
+        if (lastRange.getEnd().compareTo(originalRange.getEnd()) > 0) {
+            lastRange.setEnd(originalRange.getEnd());
+        }
     }
 }

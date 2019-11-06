@@ -52,15 +52,17 @@ public class PageTest {
         try {
 
             Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
-            Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-02-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
             condition.setSplitTimeField("add_time");
             condition.setSplitByType(true);
             condition.setSplitType(SplitDateType.DAY);
-//            condition.setSplitSize(5);
+//            condition.setSplitSize(2);
             PageHelper.startPage(1, 10);
+            long start = System.currentTimeMillis();
             List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
+            System.out.println("spent:"+(System.currentTimeMillis()-start));
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             System.out.println("总数：" + pageInfo.getTotal());
 

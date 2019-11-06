@@ -53,7 +53,7 @@ public class MySqlDialect extends AbstractHelperDialect {
 
     private static final Logger logger = Logger.getLogger(MySqlDialect.class);
 
-    private Integer maxSplitSize = 10;
+    private Integer maxSplitSize = 50;
 
     @Override
     public Object processPageParameter(MappedStatement ms, Map<String, Object> paramMap, Page page, BoundSql boundSql, CacheKey pageKey) {
