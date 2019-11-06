@@ -108,9 +108,8 @@ public class PageInterceptor implements Interceptor {
                 resultList = executor.query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql);
             }
             return dialect.afterPage(resultList, parameter, rowBounds);
-        }
-        finally {
-            if(dialect != null){
+        } finally {
+            if (dialect != null) {
                 dialect.afterAll();
             }
         }
@@ -178,6 +177,8 @@ public class PageInterceptor implements Interceptor {
         if (StringUtil.isNotEmpty(countSuffix)) {
             this.countSuffix = countSuffix;
         }
+
+        ExecutorUtil.initThreadPoolExecutor();
     }
 
 }

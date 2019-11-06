@@ -42,8 +42,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * @author liuzenghui
@@ -54,6 +55,8 @@ public abstract class ExecutorUtil {
 
     private static Field additionalParametersField;
 
+    private static ThreadPoolExecutor threadPoolExecutor;
+
     static {
         try {
             additionalParametersField = BoundSql.class.getDeclaredField("additionalParameters");
@@ -61,6 +64,37 @@ public abstract class ExecutorUtil {
         } catch (NoSuchFieldException e) {
             throw new PageException("获取 BoundSql 属性 additionalParameters 失败: " + e, e);
         }
+    }
+
+    public static void initThreadPoolExecutor() {
+        threadPoolExecutor = new ThreadPoolExecutor(50,
+                100,
+                0,
+                TimeUnit.SECONDS,
+                // 使用有界队列，避免OOM,
+                new ArrayBlockingQueue<>(512),
+                new ThreadFactory() {
+                    private final AtomicInteger threadNumber = new AtomicInteger(1);
+                    private final ThreadGroup group = (System.getSecurityManager() != null) ?
+                            System.getSecurityManager().getThreadGroup() :
+                            Thread.currentThread().getThreadGroup();
+
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread t = new Thread(group, r,
+                                "pagehelper-" + threadNumber.getAndIncrement(),
+                                0);
+                        if (t.isDaemon()) {
+                            t.setDaemon(false);
+                        }
+                        if (t.getPriority() != Thread.NORM_PRIORITY) {
+                            t.setPriority(Thread.NORM_PRIORITY);
+                        }
+                        return t;
+                    }
+                },
+                new ThreadPoolExecutor.CallerRunsPolicy());
+
     }
 
     /**
@@ -164,10 +198,10 @@ public abstract class ExecutorUtil {
         for (Object partParameter : partParameterList) {
             //使用新的参数重新生成boundSql
             BoundSql partBoundSql = countMs.getBoundSql(partParameter);
-            CountPreparator countPreparation = new CountPreparator(dialect, executor, countMs, rowBounds, partParameter, partBoundSql).prepare();
+            CountConditionBuilder countPreparation = new CountConditionBuilder(dialect, executor, countMs, rowBounds, partParameter, partBoundSql).build();
             CacheKey countKey = countPreparation.getCountKey();
             BoundSql countBoundSql = countPreparation.getCountBoundSql();
-            futureList.add(CompletableFuture.supplyAsync(() -> {
+            Supplier<Long> supplier = () -> {
                 try {
                     //执行 count 查询
                     Object countResultList = executor.query(countMs, partParameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
@@ -176,7 +210,8 @@ public abstract class ExecutorUtil {
                     logger.warn("执行并行count发生异常", e);
                     return 0L;
                 }
-            }));
+            };
+            futureList.add(CompletableFuture.supplyAsync(supplier,threadPoolExecutor));
         }
 
         // 等待所有的future 执行完成
@@ -219,7 +254,7 @@ public abstract class ExecutorUtil {
                                            BoundSql boundSql,
                                            RowBounds rowBounds,
                                            ResultHandler resultHandler) throws SQLException {
-        CountPreparator countPreparation = new CountPreparator(dialect, executor, countMs, rowBounds, parameter, boundSql).prepare();
+        CountConditionBuilder countPreparation = new CountConditionBuilder(dialect, executor, countMs, rowBounds, parameter, boundSql).build();
         CacheKey countKey = countPreparation.getCountKey();
         BoundSql countBoundSql = countPreparation.getCountBoundSql();
         //执行 count 查询
@@ -269,7 +304,7 @@ public abstract class ExecutorUtil {
         }
     }
 
-    private static class CountPreparator {
+    private static class CountConditionBuilder {
         private Dialect dialect;
         private Executor executor;
         private MappedStatement countMs;
@@ -279,7 +314,7 @@ public abstract class ExecutorUtil {
         private CacheKey countKey;
         private BoundSql countBoundSql;
 
-        public CountPreparator(Dialect dialect, Executor executor, MappedStatement countMs, RowBounds rowBounds, Object partParameter, BoundSql partBoundSql) {
+        public CountConditionBuilder(Dialect dialect, Executor executor, MappedStatement countMs, RowBounds rowBounds, Object partParameter, BoundSql partBoundSql) {
             this.dialect = dialect;
             this.executor = executor;
             this.countMs = countMs;
@@ -296,7 +331,7 @@ public abstract class ExecutorUtil {
             return countBoundSql;
         }
 
-        public CountPreparator prepare() {
+        public CountConditionBuilder build() {
             Map<String, Object> additionalParameters = getAdditionalParameter(partBoundSql);
             //创建 count 查询的缓存 key
             countKey = executor.createCacheKey(countMs, partParameter, RowBounds.DEFAULT, partBoundSql);
