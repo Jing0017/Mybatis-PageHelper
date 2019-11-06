@@ -16,7 +16,6 @@ public class ParallelPage implements Serializable {
     protected boolean splitByType;
 
     public ParallelPage() {
-        this.setSplitSize(3);
         this.setSplitByType(false);
         this.setSplitType(SplitDateType.DAY);
     }

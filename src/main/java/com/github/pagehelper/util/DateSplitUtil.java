@@ -1,5 +1,6 @@
 package com.github.pagehelper.util;
 
+import cn.hutool.core.lang.Assert;
 import com.github.pagehelper.PageException;
 import com.github.pagehelper.parallel.model.DateRange;
 import com.github.pagehelper.parallel.model.ParallelPage;
@@ -130,7 +131,7 @@ public class DateSplitUtil {
         Date begin = originalRange.getBegin();
         Date end = originalRange.getEnd();
         if (!ObjectUtils.allNotNull(begin, end)) {
-            return null;
+            return Lists.newArrayList();
         }
 
         long timeLength = end.getTime() - begin.getTime();

@@ -24,6 +24,7 @@
 
 package com.github.pagehelper.dialect.helper;
 
+import cn.hutool.core.exceptions.UtilException;
 import cn.hutool.core.util.ReflectUtil;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageException;
@@ -87,81 +88,85 @@ public class MySqlDialect extends AbstractHelperDialect {
     @Override
     public List<Object> getSplitParameter(Object originalParameter) {
 
+        try {
+            final List<Object> partParameterList = Lists.newArrayList();
+            //入参是MybatisAsyncPage类型，说明是Mybatis generator生成的XXXExample
+            if (originalParameter instanceof MybatisPage) {
+                //深度克隆一份入参
+                MybatisPage parameterCopy = (MybatisPage) SerializationUtils.clone((Serializable) originalParameter);
+                //获取需要切片的时间字段名称
+                String datetimeFieldValue = (String) ReflectUtil.getFieldValue(parameterCopy, "splitTimeField");
+                //oredCriteria
+                List oredCriteriaValue = (List) ReflectUtil.getFieldValue(parameterCopy, "oredCriteria");
+                for (Object baseCriteria : oredCriteriaValue) {
+                    //criteria
+                    List criterionList = (List) ReflectUtil.getFieldValue(baseCriteria, "criteria");
+                    for (Object criterion : criterionList) {
+                        //condition
+                        String condition = (String) ReflectUtil.getFieldValue(criterion, "condition");
+                        if (Objects.equals(String.format("%s between", datetimeFieldValue), condition)) {
+                            //切片字段的开始值
+                            Object begin = ReflectUtil.getFieldValue(criterion, "value");
+                            //切片字段的结束值
+                            Object end = ReflectUtil.getFieldValue(criterion, "secondValue");
+                            //时间按照splitSize分段
+                            List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter);
+                            //未找到切分字段的范围值
+                            if (Objects.isNull(ranges)) {
+                                throw new PageException("未找到切分字段的范围值");
+                            }
+                            for (DateRange range : ranges) {
+                                ReflectUtil.setFieldValue(criterion, "value", range.getBegin());
+                                ReflectUtil.setFieldValue(criterion, "secondValue", range.getEnd());
 
-        List<Object> partParameterList = Lists.newArrayList();
-        //入参是MybatisAsyncPage类型，说明是Mybatis generator生成的XXXExample
-        if (originalParameter instanceof MybatisPage) {
-            //深度克隆一份入参
-            MybatisPage parameterCopy = (MybatisPage) SerializationUtils.clone((Serializable) originalParameter);
-            //获取需要切片的时间字段名称
-            String datetimeFieldValue = (String) ReflectUtil.getFieldValue(parameterCopy, "splitTimeField");
-            //oredCriteria
-            List oredCriteriaValue = (List) ReflectUtil.getFieldValue(parameterCopy, "oredCriteria");
-            for (Object baseCriteria : oredCriteriaValue) {
-                //criteria
-                List criterionList = (List) ReflectUtil.getFieldValue(baseCriteria, "criteria");
-                for (Object criterion : criterionList) {
-                    //condition
-                    String condition = (String) ReflectUtil.getFieldValue(criterion, "condition");
-                    if (Objects.equals(String.format("%s between", datetimeFieldValue), condition)) {
-                        //切片字段的开始值
-                        Object begin = ReflectUtil.getFieldValue(criterion, "value");
-                        //切片字段的结束值
-                        Object end = ReflectUtil.getFieldValue(criterion, "secondValue");
-                        //时间按照splitSize分段
-                        List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter);
-                        //未找到切分字段的范围值
-                        if (Objects.isNull(ranges)) {
-                            throw new PageException("未找到切分字段的范围值");
-                        }
-                        for (DateRange range : ranges) {
-                            ReflectUtil.setFieldValue(criterion, "value", range.getBegin());
-                            ReflectUtil.setFieldValue(criterion, "secondValue", range.getEnd());
+                                //深度克隆一份入参
+                                MybatisPage parameterSecondCopy = (MybatisPage) SerializationUtils.clone((Serializable) parameterCopy);
+                                partParameterList.add(parameterSecondCopy);
 
-                            //深度克隆一份入参
-                            MybatisPage parameterSecondCopy = (MybatisPage) SerializationUtils.clone((Serializable) parameterCopy);
-                            partParameterList.add(parameterSecondCopy);
-
+                            }
                         }
                     }
                 }
             }
-        }
 
-        //入参是CustomMybatisAsyncPage，说明是自定义的sql入参
-        if (originalParameter instanceof CustomMybatisPage) {
-            List<DateRange> ranges = getDateRanges(originalParameter);
-            for (DateRange range : ranges) {
-                ReflectUtil.setFieldValue(originalParameter, "splitTimeValueBegin", range.getBegin());
-                ReflectUtil.setFieldValue(originalParameter, "splitTimeValueEnd", range.getEnd());
+            //入参是CustomMybatisAsyncPage，说明是自定义的sql入参
+            if (originalParameter instanceof CustomMybatisPage) {
+                List<DateRange> ranges = getDateRanges(originalParameter);
+                for (DateRange range : ranges) {
+                    ReflectUtil.setFieldValue(originalParameter, "splitTimeValueBegin", range.getBegin());
+                    ReflectUtil.setFieldValue(originalParameter, "splitTimeValueEnd", range.getEnd());
 
-                //深度克隆一份入参
-                CustomMybatisPage parameterSecondCopy = (CustomMybatisPage) SerializationUtils.clone((Serializable) originalParameter);
-                partParameterList.add(parameterSecondCopy);
+                    //深度克隆一份入参
+                    CustomMybatisPage parameterSecondCopy = (CustomMybatisPage) SerializationUtils.clone((Serializable) originalParameter);
+                    partParameterList.add(parameterSecondCopy);
 
+                }
             }
+
+            if (originalParameter instanceof Map) {
+                Map<String, Object> parameterMap = (Map) originalParameter;
+                Collection<Object> values = parameterMap.values();
+                values.stream()
+                        .filter(item -> item instanceof CustomMybatisPage)
+                        .findAny()
+                        .ifPresent(item -> {
+                            List<DateRange> ranges = getDateRanges(item);
+                            for (DateRange range : ranges) {
+                                ReflectUtil.setFieldValue(item, "splitTimeValueBegin", range.getBegin());
+                                ReflectUtil.setFieldValue(item, "splitTimeValueEnd", range.getEnd());
+
+                                //深度克隆一份入参
+                                Map parameterSecondCopy = (Map) SerializationUtils.clone((Serializable) originalParameter);
+                                partParameterList.add(parameterSecondCopy);
+                            }
+                        });
+            }
+            return partParameterList;
+        } catch (UtilException | PageException e) {
+            //TODO LOG
+            return Lists.newArrayList();
         }
 
-        if (originalParameter instanceof Map) {
-            Map<String, Object> parameterMap = (Map) originalParameter;
-            Collection<Object> values = parameterMap.values();
-            values.stream()
-                    .filter(item -> item instanceof CustomMybatisPage)
-                    .findAny()
-                    .ifPresent(item -> {
-                        List<DateRange> ranges = getDateRanges(item);
-                        for (DateRange range : ranges) {
-                            ReflectUtil.setFieldValue(item, "splitTimeValueBegin", range.getBegin());
-                            ReflectUtil.setFieldValue(item, "splitTimeValueEnd", range.getEnd());
-
-                            //深度克隆一份入参
-                            Map parameterSecondCopy = (Map) SerializationUtils.clone((Serializable) originalParameter);
-                            partParameterList.add(parameterSecondCopy);
-                        }
-                    });
-        }
-
-        return partParameterList;
     }
 
     private List<DateRange> getDateRanges(Object originalParameter) {
@@ -171,6 +176,7 @@ public class MySqlDialect extends AbstractHelperDialect {
         List<DateRange> ranges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), originalParameter);
         //未找到切分字段的范围值
         if (Objects.isNull(ranges)) {
+            //TODO LOG
             throw new PageException("未找到切分字段的范围值");
         }
         return ranges;

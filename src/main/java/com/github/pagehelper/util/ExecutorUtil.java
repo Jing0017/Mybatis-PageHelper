@@ -132,6 +132,10 @@ public abstract class ExecutorUtil {
             List<CompletableFuture<Long>> futureList = Lists.newArrayList();
             List<Object> partParameterList = dialect.getSplitParameter(parameter);
 
+            if (CollectionUtil.isEmpty(partParameterList) || Objects.equals(1, partParameterList.size())) {
+                throw new PageException("切分时间字段失败，请检查入参是否可以序列化");
+            }
+
             for (Object partParameter : partParameterList) {
                 //使用新的参数重新生成boundSql
                 BoundSql partBoundSql = countMs.getBoundSql(partParameter);
@@ -150,9 +154,6 @@ public abstract class ExecutorUtil {
                 }));
             }
 
-            if (CollectionUtil.isEmpty(futureList) || Objects.equals(1, futureList.size())) {
-                throw new PageException("切分时间字段失败，请检查入参是否可以序列化");
-            }
             // 等待所有的future 执行完成
             CompletableFuture
                     .allOf(futureList.toArray(new CompletableFuture[]{}))
