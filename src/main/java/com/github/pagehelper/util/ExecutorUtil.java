@@ -71,7 +71,7 @@ public abstract class ExecutorUtil {
                 100,
                 0,
                 TimeUnit.SECONDS,
-                // 使用有界队列，避免OOM,
+                // 使用有界队列，避免OOM
                 new ArrayBlockingQueue<>(512),
                 new ThreadFactory() {
                     private final AtomicInteger threadNumber = new AtomicInteger(1);

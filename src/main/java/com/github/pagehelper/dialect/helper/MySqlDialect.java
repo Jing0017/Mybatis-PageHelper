@@ -211,10 +211,10 @@ public class MySqlDialect extends AbstractHelperDialect {
             }
         }
 
-        String enableParallelCount = (String) properties.get("enableParallelCount");
+        String enableParallelCountFromProp = (String) properties.get("enableParallelCount");
         if (Objects.nonNull(enableParallelCount)) {
             try {
-                this.enableParallelCount = Boolean.valueOf(enableParallelCount);
+                this.enableParallelCount = Boolean.valueOf(enableParallelCountFromProp);
             } catch (Exception e) {
                 logger.warn(String.format("初始化enableParallelCount失败，使用默认enableParallelCount=%s", this.enableParallelCount), e);
             }
