@@ -138,4 +138,9 @@ public class PageHelper extends PageMethod implements Dialect {
     public List<Object> getSplitParameter(Object originalParameter) {
         return autoDialect.getDelegate().getSplitParameter(originalParameter);
     }
+
+    @Override
+    public Boolean parallelCountActive() {
+        return autoDialect.getDelegate().parallelCountActive();
+    }
 }
