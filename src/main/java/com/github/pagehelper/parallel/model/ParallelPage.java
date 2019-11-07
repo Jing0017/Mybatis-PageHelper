@@ -1,7 +1,6 @@
 package com.github.pagehelper.parallel.model;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * @author yanjing
@@ -33,11 +32,6 @@ public class ParallelPage implements Serializable {
      * 需要进行切片的时间字段名称
      */
     protected String[] splitTimeField;
-
-    public ParallelPage() {
-        this.setSplitByType(false);
-        this.setSplitType(SplitDateType.DAY);
-    }
 
     public static ParallelPage createPage(Integer size, SplitDateType type, Boolean splitByType, String[] splitTimeField) {
         ParallelPage parallelPage = new ParallelPage();
