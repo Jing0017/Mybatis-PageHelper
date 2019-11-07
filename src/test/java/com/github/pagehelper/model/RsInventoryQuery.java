@@ -1,8 +1,9 @@
 package com.github.pagehelper.model;
 
-import com.github.pagehelper.parallel.model.CustomMybatisPage;
-import com.github.pagehelper.parallel.annotations.SplitSize;
+import com.github.pagehelper.parallel.annotations.ParallelCount;
+import com.github.pagehelper.parallel.model.ParallelPage;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -10,11 +11,16 @@ import java.util.Date;
  * date: 2019/11/5
  * description:
  */
-@SplitSize(size = 10)
-public class RsInventoryQuery extends CustomMybatisPage {
+@ParallelCount(splitTimeField = {"aaa", "bbb"})
+public class RsInventoryQuery extends ParallelPage {
 
-    private RsInventoryQuery(Date begin, Date end) {
-        super(begin, end);
+    private Date begin;
+
+    private Date end;
+
+    public RsInventoryQuery(Date begin, Date end) {
+        this.begin = begin;
+        this.end = end;
     }
 
     public static RsInventoryQuery buildQueryReq(Date begin, Date end) {

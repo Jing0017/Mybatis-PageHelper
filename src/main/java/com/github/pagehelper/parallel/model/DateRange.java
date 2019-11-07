@@ -29,6 +29,10 @@ public class DateRange {
         return new DateRange((Date) begin, (Date) end);
     }
 
+    public static DateRange buildRangeFrom(Date begin, Date end) {
+        return new DateRange(begin, end);
+    }
+
     public Date getBegin() {
         return begin;
     }

@@ -10,20 +10,47 @@ import java.util.Objects;
  */
 public class ParallelPage implements Serializable {
 
+    /**
+     * 切分个数
+     */
     protected Integer splitSize;
 
+    /**
+     * 日期类型
+     *
+     * @see SplitDateType
+     */
     protected SplitDateType splitType;
 
+    /**
+     * 是否根据日期类型切分
+     *
+     * @see SplitDateType
+     */
     protected Boolean splitByType;
+
+    /**
+     * 需要进行切片的时间字段名称
+     */
+    protected String[] splitTimeField;
 
     public ParallelPage() {
         this.setSplitByType(false);
         this.setSplitType(SplitDateType.DAY);
     }
 
+    public static ParallelPage createPage(Integer size, SplitDateType type, Boolean splitByType, String[] splitTimeField) {
+        ParallelPage parallelPage = new ParallelPage();
+        parallelPage.setSplitSize(size);
+        parallelPage.setSplitType(type);
+        parallelPage.setSplitByType(splitByType);
+        parallelPage.setSplitTimeField(splitTimeField);
+        return parallelPage;
+    }
+
     public static ParallelPage createPage(Integer size, SplitDateType type, Boolean splitByType) {
         ParallelPage parallelPage = new ParallelPage();
-        parallelPage.setSplitSize(Objects.isNull(size) ? 3 : size);
+        parallelPage.setSplitSize(size);
         parallelPage.setSplitType(type);
         parallelPage.setSplitByType(splitByType);
         return parallelPage;
@@ -57,11 +84,19 @@ public class ParallelPage implements Serializable {
         this.splitType = splitType;
     }
 
-    public Boolean isSplitByType() {
+    public Boolean getSplitByType() {
         return splitByType;
     }
 
     public void setSplitByType(Boolean splitByType) {
         this.splitByType = splitByType;
+    }
+
+    public String[] getSplitTimeField() {
+        return splitTimeField;
+    }
+
+    public void setSplitTimeField(String... splitTimeField) {
+        this.splitTimeField = splitTimeField;
     }
 }

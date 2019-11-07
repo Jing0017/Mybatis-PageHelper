@@ -26,9 +26,12 @@ package com.github.pagehelper.test.reasonable;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.github.pagehelper.mapper.CountryMapper;
 import com.github.pagehelper.mapper.RsInventoryMapper;
+import com.github.pagehelper.model.Country;
 import com.github.pagehelper.model.RsInventory;
 import com.github.pagehelper.model.RsInventoryCondition;
+import com.github.pagehelper.model.RsInventoryQuery;
 import com.github.pagehelper.parallel.model.SplitDateType;
 import com.github.pagehelper.util.MybatisReasonableHelper;
 import org.apache.commons.lang3.time.DateUtils;
@@ -47,7 +50,37 @@ public class PageTest {
     @Test
     public void testMapperWithStartPage() {
         SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
-//        CountryMapper countryMapper = sqlSession.getMapper(CountryMapper.class);
+        CountryMapper countryMapper = sqlSession.getMapper(CountryMapper.class);
+        try {
+            //获取第20页，2条内容
+            //分页插件会自动改为查询最后一页
+            PageHelper.startPage(20, 50);
+            List<Country> list = countryMapper.selectAll();
+            PageInfo<Country> page = new PageInfo<Country>(list);
+            assertEquals(33, list.size());
+            assertEquals(151, page.getStartRow());
+            assertEquals(4, page.getPageNum());
+            assertEquals(183, page.getTotal());
+
+            //获取第-3页，2条内容
+            //由于只有7天数据，分页插件会自动改为查询最后一页
+            PageHelper.startPage(-3, 50);
+            list = countryMapper.selectAll();
+            page = new PageInfo<Country>(list);
+            assertEquals(50, list.size());
+            assertEquals(1, page.getStartRow());
+            assertEquals(1, page.getPageNum());
+            assertEquals(183, page.getTotal());
+        } catch (Exception e) {
+
+        } finally {
+            sqlSession.close();
+        }
+    }
+
+    @Test
+    public void testParallelAutoParam() {
+        SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
         RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
 
@@ -55,9 +88,9 @@ public class PageTest {
             Date end = DateUtils.parseDate("2019-02-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
-            condition.setSplitTimeField("add_time");
-            condition.setSplitByType(true);
-            condition.setSplitType(SplitDateType.DAY);
+//            condition.setSplitTimeField("add_time");
+//            condition.setSplitByType(true);
+//            condition.setSplitType(SplitDateType.DAY);
 //            condition.setSplitSize(2);
             PageHelper.startPage(1, 10);
             long start = System.currentTimeMillis();
@@ -65,38 +98,31 @@ public class PageTest {
             System.out.println("spent:"+(System.currentTimeMillis()-start));
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             System.out.println("总数：" + pageInfo.getTotal());
+        } catch (Exception e) {
 
+        } finally {
+            sqlSession.close();
+        }
+    }
 
-           /* Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+    @Test
+    public void testParallelCustomParam() {
+        SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
+        RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
+        try {
+
+            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             PageHelper.startPage(1, 10);
             RsInventoryQuery rsInventoryQuery = RsInventoryQuery.buildQueryReq(begin, end);
-            rsInventoryQuery.setSplitSize(4);
+            rsInventoryQuery.setSplitTimeField("begin", "end");
+
             List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(rsInventoryQuery);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             System.out.println("总数：" + pageInfo.getTotal());
-            System.out.println(rsInventories);*/
+            System.out.println(rsInventories);
 
 
-            //获取第20页，2条内容
-            //分页插件会自动改为查询最后一页
-            /*PageHelper.startPage(20, 50);
-            List<Country> list = countryMapper.selectAll();
-            PageInfo<Country> page = new PageInfo<Country>(list);
-            assertEquals(33, list.size());
-            assertEquals(151, page.getStartRow());
-            assertEquals(4, page.getPageNum());
-            assertEquals(183, page.getTotal());*/
-
-            //获取第-3页，2条内容
-            //由于只有7天数据，分页插件会自动改为查询最后一页
-            /*PageHelper.startPage(-3, 50);
-            list = countryMapper.selectAll();
-            page = new PageInfo<Country>(list);
-            assertEquals(50, list.size());
-            assertEquals(1, page.getStartRow());
-            assertEquals(1, page.getPageNum());
-            assertEquals(183, page.getTotal());*/
         } catch (Exception e) {
 
         } finally {

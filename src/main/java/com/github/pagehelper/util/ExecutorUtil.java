@@ -167,7 +167,7 @@ public abstract class ExecutorUtil {
                                         RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
         Long count;
         //如果开启了并行count，则尝试进行并行count
-        if (dialect.parallelCountActive()) {
+//        if (dialect.parallelCountActive()) {
             try {
                 //尝试并行count
                 count = executeAutoParallelCount(dialect, executor, countMs, parameter, rowBounds, resultHandler);
@@ -175,9 +175,9 @@ public abstract class ExecutorUtil {
                 logger.warn("尝试并行count失败", e);
                 count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
             }
-        }else{
+//        }else{
             count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
-        }
+//        }
         return count;
     }
 

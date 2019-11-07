@@ -30,21 +30,18 @@ public class DateSplitUtil {
      * @param originalParameter
      * @return
      */
-    public static List<DateRange> splitFrom(DateRange originalRange, Object originalParameter, Integer maxSplitSize) {
-
-        //获取切片大小配置
-        ParallelPage parallelPage = ReflectionUtil.getSplitSize(originalParameter);
+    public static List<DateRange> splitFrom(DateRange originalRange, Integer maxSplitSize, ParallelPage parallelConfig) {
 
         //根据时间类型切分
-        if (parallelPage.isSplitByType()) {
+        if (parallelConfig.getSplitByType()) {
             try {
-                return getDateRangesByType(originalRange, parallelPage, maxSplitSize);
+                return getDateRangesByType(originalRange, parallelConfig, maxSplitSize);
             } catch (Exception e) {
-                return getDateRangesBySize(originalRange, parallelPage, maxSplitSize);
+                return getDateRangesBySize(originalRange, parallelConfig, maxSplitSize);
             }
         } else {
             //根据时间范围为个数切分
-            return getDateRangesBySize(originalRange, parallelPage, maxSplitSize);
+            return getDateRangesBySize(originalRange, parallelConfig, maxSplitSize);
         }
 
     }

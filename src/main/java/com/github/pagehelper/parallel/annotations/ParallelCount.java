@@ -12,11 +12,13 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface SplitSize {
+public @interface ParallelCount {
 
     int size() default 3;
 
     SplitDateType type() default SplitDateType.DAY;
 
     boolean splitByType() default false;
+
+    String[] splitTimeField() default {};
 }

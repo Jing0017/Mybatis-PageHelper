@@ -1,7 +1,7 @@
 package com.github.pagehelper.model;
 
-import com.github.pagehelper.parallel.model.MybatisPage;
-import com.github.pagehelper.parallel.annotations.SplitSize;
+import com.github.pagehelper.parallel.annotations.ParallelCount;
+import com.github.pagehelper.parallel.model.ParallelPage;
 import com.github.pagehelper.parallel.model.SplitDateType;
 
 import java.io.Serializable;
@@ -12,8 +12,10 @@ import java.util.List;
 /**
  * @author lvjun
  */
-@SplitSize(splitByType = true, type = SplitDateType.DAY)
-public class RsInventoryCondition extends MybatisPage {
+@ParallelCount(splitByType = true,
+        type = SplitDateType.DAY,
+        splitTimeField = {"add_time"})
+public class RsInventoryCondition implements Serializable{
     protected String orderByClause;
 
     protected boolean distinct;
@@ -93,7 +95,7 @@ public class RsInventoryCondition extends MybatisPage {
         return offset;
     }
 
-    protected abstract static class GeneratedCriteria implements Serializable{
+    protected abstract static class GeneratedCriteria implements Serializable {
         protected List<Criterion> criteria;
 
         protected GeneratedCriteria() {
@@ -1796,6 +1798,7 @@ public class RsInventoryCondition extends MybatisPage {
     }
 
     /**
+     *
      */
     public static class Criteria extends GeneratedCriteria implements Serializable {
 
@@ -1804,7 +1807,7 @@ public class RsInventoryCondition extends MybatisPage {
         }
     }
 
-    public static class Criterion implements Serializable{
+    public static class Criterion implements Serializable {
         private String condition;
 
         private Object value;

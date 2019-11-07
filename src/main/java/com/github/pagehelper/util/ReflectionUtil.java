@@ -2,11 +2,13 @@ package com.github.pagehelper.util;
 
 import cn.hutool.core.util.ReflectUtil;
 import com.github.pagehelper.PageException;
-import com.github.pagehelper.parallel.annotations.SplitSize;
+import com.github.pagehelper.parallel.annotations.ParallelCount;
 import com.github.pagehelper.parallel.model.ParallelPage;
 import com.github.pagehelper.parallel.model.SplitDateType;
+import org.apache.commons.lang3.ObjectUtils;
 
 import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -54,37 +56,90 @@ public class ReflectionUtil {
     }
 
     /**
-     * 获取切片数，默认为3个切片
+     * 获取参数中的并行count配置信息，封装至一个ParallelPage中，优先获取参数中的配置，其次获取注解中的配置
      *
      * @param obj
      * @return
      */
-    public static ParallelPage getSplitSize(Object obj) {
-        //优先获取参数中的切片配置
-        Integer size = (Integer) ReflectUtil.getFieldValue(obj, "splitSize");
-        SplitDateType type = (SplitDateType) ReflectUtil.getFieldValue(obj, "splitType");
-        Boolean splitByType = (Boolean) ReflectUtil.getFieldValue(obj, "splitByType");
-        if(splitByType && Objects.nonNull(type)){
-            return ParallelPage.createPage(size, type, true);
-        }
-
-        if(!splitByType && Objects.nonNull(size)){
-            return ParallelPage.createPage(size, type, false);
-        }
-
-
-        try {
-            Class<?> clazz = obj.getClass();
-            SplitSize splitSize = clazz.getDeclaredAnnotation(SplitSize.class);
-            if (Objects.nonNull(splitSize)) {
-                return ParallelPage.createPage(
-                        splitSize.size(),
-                        splitSize.type(),
-                        splitSize.splitByType());
+    public static ParallelPage getParallelConfig(Object obj) {
+        ParallelPage parallelPage = null;
+        if (obj instanceof Map) {
+            for (Object value : ((Map) obj).values()) {
+                parallelPage = mergedConfig(value);
+                if (Objects.nonNull(parallelPage)) {
+                    break;
+                }
             }
-        } catch (Exception e) {
-            throw new PageException(e);
+        } else {
+            parallelPage = mergedConfig(obj);
+
         }
-        return ParallelPage.createPage(3);
+        return parallelPage;
+    }
+
+    /**
+     * 合并参数和注解中获取的配置
+     *
+     * @param obj
+     * @return
+     */
+    private static ParallelPage mergedConfig(Object obj) {
+        ParallelPage parallelConfigFromParam = getParallelConfigFromParam(obj);
+        ParallelPage parallelConfigFromAnno = getParallelConfigFromAnno(obj);
+        if (Objects.isNull(parallelConfigFromParam) && Objects.isNull(parallelConfigFromAnno)) {
+            return null;
+        } else if (Objects.isNull(parallelConfigFromParam)) {
+            return parallelConfigFromAnno;
+        } else if (Objects.isNull(parallelConfigFromAnno)) {
+            return parallelConfigFromParam;
+        } else {
+            if (Objects.nonNull(parallelConfigFromParam.getSplitSize())) {
+                parallelConfigFromAnno.setSplitSize(parallelConfigFromParam.getSplitSize());
+            }
+            if (Objects.nonNull(parallelConfigFromParam.getSplitType())) {
+                parallelConfigFromAnno.setSplitType(parallelConfigFromParam.getSplitType());
+            }
+            if (Objects.nonNull(parallelConfigFromParam.getSplitByType())) {
+                parallelConfigFromAnno.setSplitByType(parallelConfigFromParam.getSplitByType());
+            }
+            if (Objects.nonNull(parallelConfigFromParam.getSplitTimeField())) {
+                parallelConfigFromAnno.setSplitTimeField(parallelConfigFromParam.getSplitTimeField());
+            }
+            return parallelConfigFromAnno;
+        }
+    }
+
+
+    /**
+     * 从参数中获取并行count配置
+     *
+     * @param obj
+     * @return
+     */
+    private static ParallelPage getParallelConfigFromParam(Object obj) {
+        Integer splitSize = (Integer) ReflectUtil.getFieldValue(obj, "splitSize");
+        SplitDateType splitType = (SplitDateType) ReflectUtil.getFieldValue(obj, "splitType");
+        Boolean splitByType = (Boolean) ReflectUtil.getFieldValue(obj, "splitByType");
+        String[] splitTimeField = (String[]) ReflectUtil.getFieldValue(obj, "splitTimeField");
+        if (ObjectUtils.anyNotNull(splitSize, splitType, splitByType, splitTimeField)) {
+            return ParallelPage.createPage(splitSize, splitType, splitByType, splitTimeField);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 从注解中获取并行count配置
+     *
+     * @param obj
+     * @return
+     */
+    private static ParallelPage getParallelConfigFromAnno(Object obj) {
+        Class<?> clazz = obj.getClass();
+        ParallelCount parallelCount = clazz.getDeclaredAnnotation(ParallelCount.class);
+        if (Objects.nonNull(parallelCount)) {
+            return ParallelPage.createPage(parallelCount.size(), parallelCount.type(), parallelCount.splitByType(), parallelCount.splitTimeField());
+        }
+        return null;
     }
 }

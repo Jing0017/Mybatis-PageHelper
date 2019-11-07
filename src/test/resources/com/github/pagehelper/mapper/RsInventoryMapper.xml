@@ -391,8 +391,8 @@
         <include refid="Base_Column_List"/>
         from rs_inventory
         <where>
-            <if test="splitTimeValueBegin != null and splitTimeValueEnd != null">
-                add_time between #{splitTimeValueBegin} and #{splitTimeValueEnd}
+            <if test="begin != null and end != null">
+                add_time between #{begin} and #{end}
             </if>
         </where>
     </select>
