@@ -28,6 +28,7 @@ import com.github.pagehelper.dialect.AbstractHelperDialect;
 import com.github.pagehelper.page.PageAutoDialect;
 import com.github.pagehelper.page.PageMethod;
 import com.github.pagehelper.page.PageParams;
+import com.github.pagehelper.parallel.model.TotalCount;
 import com.github.pagehelper.parser.CountSqlParser;
 import com.github.pagehelper.util.MSUtils;
 import com.github.pagehelper.util.StringUtil;
@@ -80,6 +81,11 @@ public class PageHelper extends PageMethod implements Dialect {
 
     @Override
     public boolean afterCount(long count, Object parameterObject, RowBounds rowBounds) {
+        return autoDialect.getDelegate().afterCount(count, parameterObject, rowBounds);
+    }
+
+    @Override
+    public boolean afterCount(TotalCount count, Object parameterObject, RowBounds rowBounds) {
         return autoDialect.getDelegate().afterCount(count, parameterObject, rowBounds);
     }
 

@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author liuzh/abel533/isea533
  * @version 3.6.0
- *          项目地址 : http://git.oschina.net/free/Mybatis_PageHelper
+ * 项目地址 : http://git.oschina.net/free/Mybatis_PageHelper
  */
 public class Page<E> extends ArrayList<E> implements Closeable {
     private static final long serialVersionUID = 1L;
@@ -58,6 +58,17 @@ public class Page<E> extends ArrayList<E> implements Closeable {
      * 总数
      */
     private long total;
+
+    /**
+     * 是否使用并行count
+     */
+    private boolean usingParallel;
+
+    /**
+     * 并行count线程数量
+     */
+    private int parallelSize;
+
     /**
      * 总页数
      */
@@ -198,11 +209,27 @@ public class Page<E> extends ArrayList<E> implements Closeable {
         }
         //分页合理化，针对不合理的页码自动处理
         if ((reasonable != null && reasonable) && pageNum > pages) {
-            if(pages!=0){
+            if (pages != 0) {
                 pageNum = pages;
             }
             calculateStartAndEndRow();
         }
+    }
+
+    public boolean isUsingParallel() {
+        return usingParallel;
+    }
+
+    public void setUsingParallel(boolean usingParallel) {
+        this.usingParallel = usingParallel;
+    }
+
+    public int getParallelSize() {
+        return parallelSize;
+    }
+
+    public void setParallelSize(int parallelSize) {
+        this.parallelSize = parallelSize;
     }
 
     public Boolean getReasonable() {
@@ -232,6 +259,7 @@ public class Page<E> extends ArrayList<E> implements Closeable {
         }
         return this;
     }
+
     public String getOrderBy() {
         return orderBy;
     }

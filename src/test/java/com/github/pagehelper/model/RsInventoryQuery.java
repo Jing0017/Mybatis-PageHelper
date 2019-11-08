@@ -11,7 +11,7 @@ import java.util.Date;
  * date: 2019/11/5
  * description:
  */
-@ParallelCount(splitTimeField = {"aaa", "bbb"})
+@ParallelCount(size = 10, splitTimeField = {"begin", "end"})
 public class RsInventoryQuery extends ParallelPage {
 
     private Date begin;

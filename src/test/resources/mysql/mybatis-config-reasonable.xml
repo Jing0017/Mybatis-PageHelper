@@ -41,8 +41,10 @@
 
     <plugins>
         <plugin interceptor="com.github.pagehelper.PageInterceptor">
-            <property name="helperDialect" value="mysql"/>
+            <!--<property name="helperDialect" value="mysql"/>-->
             <property name="reasonable" value="true"/>
+            <property name="dialet" value="mysql"/>
+            <property name="enableParallelCount" value="true"/>
         </plugin>
     </plugins>
 

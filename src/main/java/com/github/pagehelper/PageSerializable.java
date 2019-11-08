@@ -33,7 +33,12 @@ import java.util.List;
 public class PageSerializable<T> implements Serializable {
     private static final long serialVersionUID = 1L;
     //总记录数
-    protected long    total;
+    protected long total;
+
+    protected boolean usingParallel;
+
+    protected int parallelSize;
+
     //结果集
     protected List<T> list;
 
@@ -42,14 +47,16 @@ public class PageSerializable<T> implements Serializable {
 
     public PageSerializable(List<T> list) {
         this.list = list;
-        if(list instanceof Page){
-            this.total = ((Page)list).getTotal();
+        if (list instanceof Page) {
+            this.total = ((Page) list).getTotal();
+            this.usingParallel = ((Page) list).isUsingParallel();
+            this.parallelSize = ((Page) list).getParallelSize();
         } else {
             this.total = list.size();
         }
     }
 
-    public static <T> PageSerializable<T> of(List<T> list){
+    public static <T> PageSerializable<T> of(List<T> list) {
         return new PageSerializable<T>(list);
     }
 
@@ -59,6 +66,22 @@ public class PageSerializable<T> implements Serializable {
 
     public void setTotal(long total) {
         this.total = total;
+    }
+
+    public boolean isUsingParallel() {
+        return usingParallel;
+    }
+
+    public void setUsingParallel(boolean usingParallel) {
+        this.usingParallel = usingParallel;
+    }
+
+    public int getParallelSize() {
+        return parallelSize;
+    }
+
+    public void setParallelSize(int parallelSize) {
+        this.parallelSize = parallelSize;
     }
 
     public List<T> getList() {

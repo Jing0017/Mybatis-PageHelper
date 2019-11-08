@@ -24,6 +24,7 @@
 
 package com.github.pagehelper;
 
+import com.github.pagehelper.parallel.model.TotalCount;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -80,6 +81,19 @@ public interface Dialect {
      * @return true 继续分页查询，false 直接返回
      */
     boolean afterCount(long count, Object parameterObject, RowBounds rowBounds);
+
+
+    /**
+     * 执行完 count 查询后
+     *
+     * @param count           查询结果总数
+     * @param parameterObject 接口参数
+     * @param rowBounds       分页参数
+     * @return true 继续分页查询，false 直接返回
+     */
+    default boolean afterCount(TotalCount count, Object parameterObject, RowBounds rowBounds) {
+        return afterCount(count.getCount(), parameterObject, rowBounds);
+    }
 
     /**
      * 处理查询参数对象
@@ -138,7 +152,8 @@ public interface Dialect {
 
     /**
      * 切分参数，为异步并行count做做准备
-     * @param originalParameter
+     *
+     * @param originalParameter 参数
      * @return
      */
     default List<Object> getSplitParameter(Object originalParameter) {
@@ -147,9 +162,10 @@ public interface Dialect {
 
     /**
      * 是否开启异步并行count
+     *
      * @return
      */
-    default Boolean parallelCountActive(){
+    default Boolean parallelCountActive() {
         return false;
     }
 }

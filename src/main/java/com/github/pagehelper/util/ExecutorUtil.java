@@ -27,6 +27,7 @@ package com.github.pagehelper.util;
 import cn.hutool.core.collection.CollectionUtil;
 import com.github.pagehelper.Dialect;
 import com.github.pagehelper.PageException;
+import com.github.pagehelper.parallel.model.TotalCount;
 import com.google.common.collect.Lists;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
@@ -162,23 +163,26 @@ public abstract class ExecutorUtil {
      * @return
      * @throws SQLException
      */
-    public static Long executeAutoCount(Dialect dialect, Executor executor, MappedStatement countMs,
-                                        Object parameter, BoundSql boundSql,
-                                        RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
-        Long count;
+    public static TotalCount executeAutoCount(Dialect dialect, Executor executor, MappedStatement countMs,
+                                              Object parameter, BoundSql boundSql,
+                                              RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+        TotalCount totalCount;
         //如果开启了并行count，则尝试进行并行count
-//        if (dialect.parallelCountActive()) {
+        if (dialect.parallelCountActive()) {
             try {
                 //尝试并行count
-                count = executeAutoParallelCount(dialect, executor, countMs, parameter, rowBounds, resultHandler);
+                totalCount = executeAutoParallelCount(dialect, executor, countMs, parameter, rowBounds, resultHandler);
             } catch (Exception e) {
                 logger.warn("尝试并行count失败", e);
-                count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
+                Long count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
+                totalCount = TotalCount.createCount(count);
+
             }
-//        }else{
-            count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
-//        }
-        return count;
+        } else {
+            Long count = doExecuteAutoCount(dialect, executor, countMs, parameter, boundSql, rowBounds, resultHandler);
+            totalCount = TotalCount.createCount(count);
+        }
+        return totalCount;
     }
 
     /**
@@ -192,7 +196,7 @@ public abstract class ExecutorUtil {
      * @param resultHandler
      * @return
      */
-    private static Long executeAutoParallelCount(Dialect dialect, Executor executor, MappedStatement countMs, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) {
+    private static TotalCount executeAutoParallelCount(Dialect dialect, Executor executor, MappedStatement countMs, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) {
         List<CompletableFuture<Long>> futureList = Lists.newArrayList();
         List<Object> partParameterList = dialect.getSplitParameter(parameter);
 
@@ -216,7 +220,7 @@ public abstract class ExecutorUtil {
                     return 0L;
                 }
             };
-            futureList.add(CompletableFuture.supplyAsync(supplier,threadPoolExecutor));
+            futureList.add(CompletableFuture.supplyAsync(supplier, threadPoolExecutor));
         }
 
         // 等待所有的future 执行完成
@@ -236,7 +240,7 @@ public abstract class ExecutorUtil {
                     }
                     return 0L;
                 }).sum();
-        return sum;
+        return TotalCount.createParallelCount(sum, futureList.size());
     }
 
     /**

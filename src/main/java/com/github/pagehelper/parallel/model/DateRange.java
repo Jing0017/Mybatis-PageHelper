@@ -9,8 +9,14 @@ import java.util.Date;
  */
 public class DateRange {
 
+    /**
+     * 开始时间
+     */
     private Date begin;
 
+    /**
+     * 结束时间
+     */
     private Date end;
 
     public DateRange() {

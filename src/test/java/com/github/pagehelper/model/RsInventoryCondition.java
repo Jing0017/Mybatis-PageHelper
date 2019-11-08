@@ -15,7 +15,7 @@ import java.util.List;
 @ParallelCount(splitByType = true,
         type = SplitDateType.DAY,
         splitTimeField = {"add_time"})
-public class RsInventoryCondition implements Serializable{
+public class RsInventoryCondition extends ParallelPage {
     protected String orderByClause;
 
     protected boolean distinct;

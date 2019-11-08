@@ -21,14 +21,18 @@ import java.util.Objects;
  */
 public class DateSplitUtil {
 
+    /**
+     * 1毫秒，纳秒为单位
+     */
     public static final Long ONE_MILLISECOND = 1000000L;
 
     /**
      * 将originalRange分割成size段
      *
-     * @param originalRange
-     * @param originalParameter
-     * @return
+     * @param originalRange  原时间范围
+     * @param maxSplitSize   最大切片数
+     * @param parallelConfig 时间切片配置
+     * @return 切割后的时间范围list
      */
     public static List<DateRange> splitFrom(DateRange originalRange, Integer maxSplitSize, ParallelPage parallelConfig) {
 
@@ -50,9 +54,9 @@ public class DateSplitUtil {
     /**
      * 根据时间类型切分日期范围
      *
-     * @param originalRange
-     * @param parallelPage
-     * @return
+     * @param originalRange 原时间范围
+     * @param parallelPage  时间切片配置
+     * @return 切割后的时间范围list
      */
     private static List<DateRange> getDateRangesByType(DateRange originalRange, ParallelPage parallelPage, Integer maxSplitSize) {
         LocalDateTime begin = covert2LocalDateTime(originalRange.getBegin());
@@ -89,17 +93,29 @@ public class DateSplitUtil {
             }
         }
 
-        updateLastRange(originalRange, ranges);
+        amendLastRange(originalRange, ranges);
 
         return ranges;
     }
 
+    /**
+     * 检查切片数是否已经大于最大切片数
+     *
+     * @param ranges       已经切分的时间范围
+     * @param maxSplitSize 最大切片数
+     */
     private static void checkIfBeyondMaxSplitSize(List<DateRange> ranges, Integer maxSplitSize) {
         if (ranges.size() > maxSplitSize) {
             throw new PageException("超出最大可以切分的时间范围个数");
         }
     }
 
+    /**
+     * 将Date转换为LocalDateTime
+     *
+     * @param date 日期
+     * @return LocalDateTime
+     */
     private static LocalDateTime covert2LocalDateTime(Date date) {
         Instant instant = date.toInstant();
         ZoneId zoneId = ZoneId.systemDefault();
@@ -107,6 +123,12 @@ public class DateSplitUtil {
         return instant.atZone(zoneId).toLocalDateTime();
     }
 
+    /**
+     * 将localDateTime转换为Date
+     *
+     * @param localDateTime 日期
+     * @return Date
+     */
     private static Date covert2Date(LocalDateTime localDateTime) {
         ZoneId zoneId = ZoneId.systemDefault();
         ZonedDateTime zdt = localDateTime.atZone(zoneId);
@@ -114,11 +136,11 @@ public class DateSplitUtil {
     }
 
     /**
-     * 根据size，切分日期分为
+     * 根据时间切片配置切分时间
      *
-     * @param originalRange
-     * @param parallelPage
-     * @return
+     * @param originalRange 原时间范围
+     * @param parallelPage  时间切片配置
+     * @return 切割后的时间范围list
      */
     private static List<DateRange> getDateRangesBySize(DateRange originalRange, ParallelPage parallelPage, Integer maxSplitSize) {
         Integer size = parallelPage.getSplitSize() > maxSplitSize ? maxSplitSize : parallelPage.getSplitSize();
@@ -143,11 +165,17 @@ public class DateSplitUtil {
             temp = temp + eachRangeLength + 1;
         }
 
-        updateLastRange(originalRange, ranges);
+        amendLastRange(originalRange, ranges);
         return ranges;
     }
 
-    private static void updateLastRange(DateRange originalRange, List<DateRange> ranges) {
+    /**
+     * 修正最后一个时间范围
+     *
+     * @param originalRange 原时间范围
+     * @param ranges        已经切分好的时间范围list
+     */
+    private static void amendLastRange(DateRange originalRange, List<DateRange> ranges) {
         DateRange lastRange = ranges.get(ranges.size() - 1);
         if (lastRange.getEnd().compareTo(originalRange.getEnd()) > 0) {
             lastRange.setEnd(originalRange.getEnd());

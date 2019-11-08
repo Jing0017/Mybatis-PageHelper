@@ -208,7 +208,7 @@ public class MySqlDialect extends AbstractHelperDialect {
         super.setProperties(properties);
 
         String maxSplitSizeFromProp = (String) properties.get("maxSplitSize");
-        if (Objects.nonNull(maxSplitSize)) {
+        if (Objects.nonNull(maxSplitSizeFromProp)) {
             try {
                 maxSplitSize = Integer.valueOf(maxSplitSizeFromProp);
             } catch (NumberFormatException e) {
@@ -217,7 +217,7 @@ public class MySqlDialect extends AbstractHelperDialect {
         }
 
         String enableParallelCountFromProp = (String) properties.get("enableParallelCount");
-        if (Objects.nonNull(enableParallelCount)) {
+        if (Objects.nonNull(enableParallelCountFromProp)) {
             try {
                 this.enableParallelCount = Boolean.valueOf(enableParallelCountFromProp);
             } catch (Exception e) {

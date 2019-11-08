@@ -28,6 +28,7 @@ import com.github.pagehelper.Constant;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageRowBounds;
+import com.github.pagehelper.parallel.model.TotalCount;
 import com.github.pagehelper.parser.OrderByParser;
 import com.github.pagehelper.util.MetaObjectUtil;
 import com.github.pagehelper.util.StringUtil;
@@ -93,6 +94,15 @@ public abstract class AbstractHelperDialect extends AbstractDialect implements C
             return false;
         }
         return count > ((page.getPageNum() - 1) * page.getPageSize());
+    }
+
+    @Override
+    public boolean afterCount(TotalCount count, Object parameterObject, RowBounds rowBounds) {
+        boolean flag = afterCount(count.getCount(), parameterObject, rowBounds);
+        Page page = getLocalPage();
+        page.setUsingParallel(count.getUsingParallel());
+        page.setParallelSize(count.getParallelSize());
+        return flag;
     }
 
     @Override
@@ -199,7 +209,7 @@ public abstract class AbstractHelperDialect extends AbstractDialect implements C
             page.setTotal(-1);
         } else if ((page.getPageSizeZero() != null && page.getPageSizeZero()) && page.getPageSize() == 0) {
             page.setTotal(pageList.size());
-        } else if(page.isOrderByOnly()){
+        } else if (page.isOrderByOnly()) {
             page.setTotal(pageList.size());
         }
         return page;
@@ -215,7 +225,7 @@ public abstract class AbstractHelperDialect extends AbstractDialect implements C
 
     }
 
-    protected void handleParameter(BoundSql boundSql, MappedStatement ms){
+    protected void handleParameter(BoundSql boundSql, MappedStatement ms) {
         if (boundSql.getParameterMappings() != null) {
             List<ParameterMapping> newParameterMappings = new ArrayList<ParameterMapping>(boundSql.getParameterMappings());
             newParameterMappings.add(new ParameterMapping.Builder(ms.getConfiguration(), PAGEPARAMETER_FIRST, Integer.class).build());
