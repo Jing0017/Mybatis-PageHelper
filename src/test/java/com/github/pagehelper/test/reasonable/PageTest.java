@@ -41,8 +41,7 @@ import org.junit.Test;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PageTest {
     /**
@@ -184,6 +183,35 @@ public class PageTest {
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             assertTrue(pageInfo.isUsingParallel());
             assertEquals(9, pageInfo.getParallelSize());
+
+
+        } catch (Exception e) {
+
+        } finally {
+            sqlSession.close();
+        }
+    }
+
+    /**
+     * 入参为自定义实体，并行count失败
+     */
+    @Test
+    public void testParallelFailed() {
+        SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
+        RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
+        try {
+            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            PageHelper.startPage(1, 10);
+            RsInventoryQuery rsInventoryQuery = RsInventoryQuery.buildQueryReq(begin, end);
+            rsInventoryQuery.setSplitByType(true);
+            rsInventoryQuery.setSplitType(SplitDateType.MONTH);
+            rsInventoryQuery.setSplitTimeField("aa","aa");
+
+            List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(rsInventoryQuery);
+            PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
+            assertFalse(pageInfo.isUsingParallel());
+            assertEquals(1, pageInfo.getParallelSize());
 
 
         } catch (Exception e) {
