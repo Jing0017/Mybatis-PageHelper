@@ -387,7 +387,7 @@
         </if>
     </select>
     <select id="queryInventory" resultType="com.github.pagehelper.model.RsInventory" parameterType="com.github.pagehelper.model.RsInventoryQuery">
-        select
+        /*master*/select
         <include refid="Base_Column_List"/>
         from rs_inventory
         <where>

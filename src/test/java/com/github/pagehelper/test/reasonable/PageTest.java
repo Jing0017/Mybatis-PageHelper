@@ -149,7 +149,6 @@ public class PageTest {
             Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             PageHelper.startPage(1, 10);
             RsInventoryQuery rsInventoryQuery = RsInventoryQuery.buildQueryReq(begin, end);
-
             List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(rsInventoryQuery);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             assertTrue(pageInfo.isUsingParallel());
@@ -178,7 +177,6 @@ public class PageTest {
             RsInventoryQuery rsInventoryQuery = RsInventoryQuery.buildQueryReq(begin, end);
             rsInventoryQuery.setSplitByType(true);
             rsInventoryQuery.setSplitType(SplitDateType.MONTH);
-
             List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(rsInventoryQuery);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
             assertTrue(pageInfo.isUsingParallel());

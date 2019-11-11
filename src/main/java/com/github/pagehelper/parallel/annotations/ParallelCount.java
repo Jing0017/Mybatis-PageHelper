@@ -24,7 +24,7 @@ public @interface ParallelCount {
     /**
      * 切割日期类型
      *
-     * @return 时间切片个数
+     * @return 切割日期类型
      * @see SplitDateType
      */
     SplitDateType type() default SplitDateType.DAY;
