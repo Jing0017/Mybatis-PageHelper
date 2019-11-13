@@ -58,9 +58,9 @@
                 <!--<property name="url" value="jdbc:mysql://localhost:3306/pagehelper"/>-->
                 <!--<property name="username" value="root"/>-->
                 <property name="password" value=""/>
-                <property name="url" value="jdbc:mysql://10.53.4.12:4409/wms_dev?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;zeroDateTimeBehavior=convertToNull&amp;autoReconnect=true"/>
-                <property name="username" value="lt_wms_dev_rw_te"/>
-                <property name="password" value="h80TLA0uFfXhJ1fS"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/newsitetestnew?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;zeroDateTimeBehavior=convertToNull&amp;autoReconnect=true"/>
+                <property name="username" value="root"/>
+                <property name="password" value="123456"/>
             </dataSource>
         </environment>
     </environments>

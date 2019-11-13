@@ -32,14 +32,19 @@ import com.github.pagehelper.model.Country;
 import com.github.pagehelper.model.RsInventory;
 import com.github.pagehelper.model.RsInventoryCondition;
 import com.github.pagehelper.model.RsInventoryQuery;
+import com.github.pagehelper.parallel.model.DateRange;
+import com.github.pagehelper.parallel.model.ParallelPage;
 import com.github.pagehelper.parallel.model.SplitDateType;
+import com.github.pagehelper.util.DateSplitUtil;
 import com.github.pagehelper.util.MybatisReasonableHelper;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.junit.Test;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.*;
 
@@ -87,10 +92,11 @@ public class PageTest {
         RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
 
-            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
-            Date end = DateUtils.parseDate("2019-02-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date begin = DateUtils.parseDate("2019-09-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-09-01 23:59:59", "yyyy-MM-dd HH:mm:ss");
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
+            condition.setSplitSize(24);
             PageHelper.startPage(1, 10);
             long start = System.currentTimeMillis();
             List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
@@ -114,20 +120,20 @@ public class PageTest {
         RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
             Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
-            Date end = DateUtils.parseDate("2019-02-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
             condition.setSplitTimeField("add_time");
             condition.setSplitByType(false);
             condition.setSplitType(SplitDateType.DAY);
-            condition.setSplitSize(2);
+            condition.setSplitSize(20);
             PageHelper.startPage(1, 10);
             long start = System.currentTimeMillis();
             List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
             System.out.println("spent:" + (System.currentTimeMillis() - start));
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
-            assertTrue(pageInfo.isUsingParallel());
-            assertEquals(2, pageInfo.getParallelSize());
+//            assertTrue(pageInfo.isUsingParallel());
+//            assertEquals(2, pageInfo.getParallelSize());
         } catch (Exception e) {
 
         } finally {
@@ -144,7 +150,6 @@ public class PageTest {
         SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
         RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
-
             Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
             PageHelper.startPage(1, 10);
@@ -204,7 +209,7 @@ public class PageTest {
             RsInventoryQuery rsInventoryQuery = RsInventoryQuery.buildQueryReq(begin, end);
             rsInventoryQuery.setSplitByType(true);
             rsInventoryQuery.setSplitType(SplitDateType.MONTH);
-            rsInventoryQuery.setSplitTimeField("aa","aa");
+            rsInventoryQuery.setSplitTimeField("aa", "aa");
 
             List<RsInventory> rsInventories = rsInventoryMapper.queryInventory(rsInventoryQuery);
             PageInfo<RsInventory> pageInfo = new PageInfo<>(rsInventories);
@@ -217,5 +222,38 @@ public class PageTest {
         } finally {
             sqlSession.close();
         }
+    }
+
+    @Test
+    public void testQuery() {
+        SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
+        RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
+        try {
+            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-12-01 23:59:59", "yyyy-MM-dd HH:mm:ss");
+            List<DateRange> dateRanges = DateSplitUtil.splitFrom(DateRange.buildRangeFrom(begin, end), 50, ParallelPage.createPage(24));
+            long start = System.currentTimeMillis();
+            List<Long> total = Lists.newArrayList();
+            CountDownLatch countDownLatch = new CountDownLatch(dateRanges.size());
+            for (DateRange dateRange : dateRanges) {
+                new Thread(() -> {
+                    RsInventoryCondition condition = new RsInventoryCondition();
+                    condition.createCriteria().andAddTimeBetween(dateRange.getBegin(), dateRange.getEnd());
+                    long count = rsInventoryMapper.countByExample(condition);
+                    total.add(count);
+                    countDownLatch.countDown();
+                }).start();
+            }
+            countDownLatch.await();
+            System.out.println("spent:" + (System.currentTimeMillis() - start));
+            System.out.println("total:" + total.stream().mapToLong(item->item).sum());
+//            assertTrue(pageInfo.isUsingParallel());
+//            assertEquals(2, pageInfo.getParallelSize());
+        } catch (Exception e) {
+
+        } finally {
+            sqlSession.close();
+        }
+
     }
 }

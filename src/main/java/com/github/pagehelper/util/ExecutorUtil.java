@@ -29,6 +29,7 @@ import com.github.pagehelper.Dialect;
 import com.github.pagehelper.PageException;
 import com.github.pagehelper.parallel.model.TotalCount;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -43,6 +44,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -57,6 +59,8 @@ public abstract class ExecutorUtil {
     private static Field additionalParametersField;
 
     private static ThreadPoolExecutor threadPoolExecutor;
+
+    private static Gson gson = new Gson();
 
     static {
         try {
@@ -204,6 +208,7 @@ public abstract class ExecutorUtil {
             throw new PageException("切分时间字段失败，请检查指定字段是否出入且入参是否可以序列化");
         }
 
+        String uniqueId = UUID.randomUUID().toString();
         for (Object partParameter : partParameterList) {
             //使用新的参数重新生成boundSql
             BoundSql partBoundSql = countMs.getBoundSql(partParameter);
@@ -212,9 +217,13 @@ public abstract class ExecutorUtil {
             BoundSql countBoundSql = countPreparation.getCountBoundSql();
             Supplier<Long> supplier = () -> {
                 try {
+                    long start = System.currentTimeMillis();
                     //执行 count 查询
                     Object countResultList = executor.query(countMs, partParameter, RowBounds.DEFAULT, resultHandler, countKey, countBoundSql);
-                    return (Long) ((List) countResultList).get(0);
+                    long end = System.currentTimeMillis();
+                    Long partCount = (Long) ((List) countResultList).get(0);
+                    logger.info(String.format("----pagehelper---- id:%s,spent:%d, count:%d, param:%s", uniqueId, end - start, partCount, gson.toJson(partParameter)));
+                    return partCount;
                 } catch (SQLException e) {
                     logger.warn("执行并行count发生异常", e);
                     return 0L;

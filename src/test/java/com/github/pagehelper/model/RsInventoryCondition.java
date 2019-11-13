@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * @author lvjun
  */
-@ParallelCount(splitByType = true,
+@ParallelCount(size = 2,
         type = SplitDateType.DAY,
         splitTimeField = {"add_time"})
 public class RsInventoryCondition extends ParallelPage {
