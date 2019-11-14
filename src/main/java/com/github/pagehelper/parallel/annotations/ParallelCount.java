@@ -19,7 +19,7 @@ public @interface ParallelCount {
      *
      * @return 时间切片个数
      */
-    int size() default 3;
+    int size() default 0;
 
     /**
      * 切割日期类型

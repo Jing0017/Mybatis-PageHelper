@@ -122,6 +122,11 @@ public class ReflectionUtil {
         Boolean splitByType = (Boolean) ReflectUtil.getFieldValue(obj, "splitByType");
         String[] splitTimeField = (String[]) ReflectUtil.getFieldValue(obj, "splitTimeField");
         if (ObjectUtils.anyNotNull(splitSize, splitType, splitByType, splitTimeField)) {
+
+            if (Objects.nonNull(splitSize) && splitSize <= 0) {
+                splitSize = Runtime.getRuntime().availableProcessors();
+            }
+
             return ParallelPage.createPage(splitSize, splitType, splitByType, splitTimeField);
         } else {
             return null;
@@ -138,6 +143,9 @@ public class ReflectionUtil {
         Class<?> clazz = obj.getClass();
         ParallelCount parallelCount = clazz.getDeclaredAnnotation(ParallelCount.class);
         if (Objects.nonNull(parallelCount)) {
+            if (Objects.equals(0, parallelCount.size())) {
+                return ParallelPage.createPage(Runtime.getRuntime().availableProcessors(), parallelCount.type(), parallelCount.splitByType(), parallelCount.splitTimeField());
+            }
             return ParallelPage.createPage(parallelCount.size(), parallelCount.type(), parallelCount.splitByType(), parallelCount.splitTimeField());
         }
         return null;

@@ -73,7 +73,7 @@ public abstract class ExecutorUtil {
 
     public static void initThreadPoolExecutor() {
         threadPoolExecutor = new ThreadPoolExecutor(50,
-                100,
+                50,
                 0,
                 TimeUnit.SECONDS,
                 // 使用有界队列，避免OOM

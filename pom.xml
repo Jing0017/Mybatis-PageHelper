@@ -28,7 +28,7 @@
 
     <groupId>com.github.pagehelper</groupId>
     <artifactId>shein-pagehelper</artifactId>
-    <version>5.1.11</version>
+    <version>5.1.12</version>
     <packaging>jar</packaging>
 
     <name>pagehelper 5</name>

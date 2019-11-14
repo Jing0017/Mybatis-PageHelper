@@ -151,7 +151,8 @@
         where inventory_id = #{inventoryId,jdbcType=INTEGER}
     </select>
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-        delete from rs_inventory
+        delete
+        from rs_inventory
         where inventory_id = #{inventoryId,jdbcType=INTEGER}
     </delete>
     <delete id="deleteByExample" parameterType="com.github.pagehelper.model.RsInventoryCondition">
@@ -162,25 +163,24 @@
     </delete>
     <insert id="insert" parameterType="com.github.pagehelper.model.RsInventory">
         insert into rs_inventory (inventory_id, site_id, goods_id,
-        attr_value_id, goods_sn, goods_attr,
-        goods_thumb, inventory_type, order_goods_id,
-        quantity, admin_name, add_time,
-        inventory_status, supplier_linkman, huowei_name,
-        supplier_id, weight, is_delete,
-        buy_id, is_pandian, buyer,
-        return_type, is_batch, last_update_time,
-        bill_id, turnover_no, remark
-        )
+                                  attr_value_id, goods_sn, goods_attr,
+                                  goods_thumb, inventory_type, order_goods_id,
+                                  quantity, admin_name, add_time,
+                                  inventory_status, supplier_linkman, huowei_name,
+                                  supplier_id, weight, is_delete,
+                                  buy_id, is_pandian, buyer,
+                                  return_type, is_batch, last_update_time,
+                                  bill_id, turnover_no, remark)
         values (#{inventoryId,jdbcType=INTEGER}, #{siteId,jdbcType=INTEGER}, #{goodsId,jdbcType=INTEGER},
-        #{attrValueId,jdbcType=INTEGER}, #{goodsSn,jdbcType=VARCHAR}, #{goodsAttr,jdbcType=VARCHAR},
-        #{goodsThumb,jdbcType=VARCHAR}, #{inventoryType,jdbcType=TINYINT}, #{orderGoodsId,jdbcType=INTEGER},
-        #{quantity,jdbcType=INTEGER}, #{adminName,jdbcType=VARCHAR}, #{addTime,jdbcType=TIMESTAMP},
-        #{inventoryStatus,jdbcType=TINYINT}, #{supplierLinkman,jdbcType=VARCHAR}, #{huoweiName,jdbcType=VARCHAR},
-        #{supplierId,jdbcType=VARCHAR}, #{weight,jdbcType=INTEGER}, #{isDelete,jdbcType=TINYINT},
-        #{buyId,jdbcType=VARCHAR}, #{isPandian,jdbcType=TINYINT}, #{buyer,jdbcType=VARCHAR},
-        #{returnType,jdbcType=TINYINT}, #{isBatch,jdbcType=TINYINT}, #{lastUpdateTime,jdbcType=TIMESTAMP},
-        #{billId,jdbcType=INTEGER}, #{turnoverNo,jdbcType=VARCHAR}, #{remark,jdbcType=LONGVARCHAR}
-        )
+                #{attrValueId,jdbcType=INTEGER}, #{goodsSn,jdbcType=VARCHAR}, #{goodsAttr,jdbcType=VARCHAR},
+                #{goodsThumb,jdbcType=VARCHAR}, #{inventoryType,jdbcType=TINYINT}, #{orderGoodsId,jdbcType=INTEGER},
+                #{quantity,jdbcType=INTEGER}, #{adminName,jdbcType=VARCHAR}, #{addTime,jdbcType=TIMESTAMP},
+                #{inventoryStatus,jdbcType=TINYINT}, #{supplierLinkman,jdbcType=VARCHAR},
+                #{huoweiName,jdbcType=VARCHAR},
+                #{supplierId,jdbcType=VARCHAR}, #{weight,jdbcType=INTEGER}, #{isDelete,jdbcType=TINYINT},
+                #{buyId,jdbcType=VARCHAR}, #{isPandian,jdbcType=TINYINT}, #{buyer,jdbcType=VARCHAR},
+                #{returnType,jdbcType=TINYINT}, #{isBatch,jdbcType=TINYINT}, #{lastUpdateTime,jdbcType=TIMESTAMP},
+                #{billId,jdbcType=INTEGER}, #{turnoverNo,jdbcType=VARCHAR}, #{remark,jdbcType=LONGVARCHAR})
     </insert>
     <insert id="insertSelective" parameterType="com.github.pagehelper.model.RsInventory" keyProperty="inventoryId"
             useGeneratedKeys="true">
@@ -353,40 +353,42 @@
         </trim>
     </insert>
 
-    <insert id="batchInsert">
-        INSERT INTO
-        rs_inventory (site_id, goods_id,
-        attr_value_id, goods_sn, goods_attr,
-        goods_thumb, inventory_type, order_goods_id,
-        quantity, admin_name, add_time,
-        inventory_status, supplier_linkman, huowei_name,
-        supplier_id, weight, is_delete,
-        buy_id, is_pandian, buyer,
-        return_type, is_batch,
-        bill_id, turnover_no, remark)
-        VALUES
-        <foreach collection="list" item="item" index="index" separator=",">
-            (#{item.siteId,jdbcType=INTEGER}, #{item.goodsId,jdbcType=INTEGER},
-            #{item.attrValueId,jdbcType=INTEGER}, #{item.goodsSn,jdbcType=VARCHAR}, #{item.size,jdbcType=VARCHAR},
-            #{item.goodsThumb,jdbcType=VARCHAR}, #{item.warehouseCode,jdbcType=TINYINT},
-            #{item.orderGoodsId,jdbcType=BIGINT},
-            #{item.quantity,jdbcType=INTEGER}, #{item.adminName,jdbcType=VARCHAR}, #{item.addTime,jdbcType=TIMESTAMP},
-            #{item.inventoryStatus,jdbcType=TINYINT}, #{item.supplierLinkman,jdbcType=VARCHAR},
-            #{item.huoweiName,jdbcType=VARCHAR},
-            #{item.supplierId,jdbcType=VARCHAR}, #{item.weight,jdbcType=INTEGER}, #{item.isDelete,jdbcType=TINYINT},
-            #{item.buyId,jdbcType=VARCHAR}, #{item.isPandian,jdbcType=TINYINT}, #{item.buyer,jdbcType=VARCHAR},
-            #{item.returnType,jdbcType=TINYINT}, #{item.isBatch,jdbcType=TINYINT},
-            #{item.billId,jdbcType=INTEGER}, #{item.turnoverNo,jdbcType=VARCHAR}, #{item.remark,jdbcType=LONGVARCHAR})
-        </foreach>
-    </insert>
+    <!--<insert id="batchInsert">-->
+        <!--INSERT INTO-->
+        <!--rs_inventory (site_id, goods_id,-->
+        <!--attr_value_id, goods_sn, goods_attr,-->
+        <!--goods_thumb, inventory_type, order_goods_id,-->
+        <!--quantity, admin_name, add_time,-->
+        <!--inventory_status, supplier_linkman, huowei_name,-->
+        <!--supplier_id, weight, is_delete,-->
+        <!--buy_id, is_pandian, buyer,-->
+        <!--return_type, is_batch,-->
+        <!--bill_id, turnover_no, remark)-->
+        <!--VALUES-->
+        <!--<foreach collection="list" item="item" index="index" separator=",">-->
+            <!--(#{item.siteId,jdbcType=INTEGER}, #{item.goodsId,jdbcType=INTEGER},-->
+            <!--#{item.attrValueId,jdbcType=INTEGER}, #{item.goodsSn,jdbcType=VARCHAR}, #{item.size,jdbcType=VARCHAR},-->
+            <!--#{item.goodsThumb,jdbcType=VARCHAR}, #{item.warehouseCode,jdbcType=TINYINT},-->
+            <!--#{item.orderGoodsId,jdbcType=BIGINT},-->
+            <!--#{item.quantity,jdbcType=INTEGER}, #{item.adminName,jdbcType=VARCHAR}, #{item.addTime,jdbcType=TIMESTAMP},-->
+            <!--#{item.inventoryStatus,jdbcType=TINYINT}, #{item.supplierLinkman,jdbcType=VARCHAR},-->
+            <!--#{item.huoweiName,jdbcType=VARCHAR},-->
+            <!--#{item.supplierId,jdbcType=VARCHAR}, #{item.weight,jdbcType=INTEGER}, #{item.isDelete,jdbcType=TINYINT},-->
+            <!--#{item.buyId,jdbcType=VARCHAR}, #{item.isPandian,jdbcType=TINYINT}, #{item.buyer,jdbcType=VARCHAR},-->
+            <!--#{item.returnType,jdbcType=TINYINT}, #{item.isBatch,jdbcType=TINYINT},-->
+            <!--#{item.billId,jdbcType=INTEGER}, #{item.turnoverNo,jdbcType=VARCHAR}, #{item.remark,jdbcType=LONGVARCHAR})-->
+        <!--</foreach>-->
+    <!--</insert>-->
 
-    <select id="countByExample" parameterType="com.github.pagehelper.model.RsInventoryCondition" resultType="java.lang.Long">
+    <select id="countByExample" parameterType="com.github.pagehelper.model.RsInventoryCondition"
+            resultType="java.lang.Long">
         /*master*/ select count(*) from rs_inventory
         <if test="_parameter != null">
             <include refid="Example_Where_Clause"/>
         </if>
     </select>
-    <select id="queryInventory" resultType="com.github.pagehelper.model.RsInventory" parameterType="com.github.pagehelper.model.RsInventoryQuery">
+    <select id="queryInventory" resultType="com.github.pagehelper.model.RsInventory"
+            parameterType="com.github.pagehelper.model.RsInventoryQuery">
         /*master*/select
         <include refid="Base_Column_List"/>
         from rs_inventory
@@ -636,62 +638,68 @@
     </update>
     <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.github.pagehelper.model.RsInventory">
         update rs_inventory
-        set site_id = #{siteId,jdbcType=INTEGER},
-        goods_id = #{goodsId,jdbcType=INTEGER},
-        attr_value_id = #{attrValueId,jdbcType=INTEGER},
-        goods_sn = #{goodsSn,jdbcType=VARCHAR},
-        goods_attr = #{goodsAttr,jdbcType=VARCHAR},
-        goods_thumb = #{goodsThumb,jdbcType=VARCHAR},
-        inventory_type = #{inventoryType,jdbcType=TINYINT},
-        order_goods_id = #{orderGoodsId,jdbcType=BIGINT},
-        quantity = #{quantity,jdbcType=INTEGER},
-        admin_name = #{adminName,jdbcType=VARCHAR},
-        add_time = #{addTime,jdbcType=TIMESTAMP},
-        inventory_status = #{inventoryStatus,jdbcType=TINYINT},
-        supplier_linkman = #{supplierLinkman,jdbcType=VARCHAR},
-        huowei_name = #{huoweiName,jdbcType=VARCHAR},
-        supplier_id = #{supplierId,jdbcType=VARCHAR},
-        weight = #{weight,jdbcType=INTEGER},
-        is_delete = #{isDelete,jdbcType=TINYINT},
-        buy_id = #{buyId,jdbcType=VARCHAR},
-        is_pandian = #{isPandian,jdbcType=TINYINT},
-        buyer = #{buyer,jdbcType=VARCHAR},
-        return_type = #{returnType,jdbcType=TINYINT},
-        is_batch = #{isBatch,jdbcType=TINYINT},
-        last_update_time = #{lastUpdateTime,jdbcType=TIMESTAMP},
-        bill_id = #{billId,jdbcType=INTEGER},
-        turnover_no = #{turnoverNo,jdbcType=VARCHAR},
-        remark = #{remark,jdbcType=LONGVARCHAR}
+        set site_id          = #{siteId,jdbcType=INTEGER},
+            goods_id         = #{goodsId,jdbcType=INTEGER},
+            attr_value_id    = #{attrValueId,jdbcType=INTEGER},
+            goods_sn         = #{goodsSn,jdbcType=VARCHAR},
+            goods_attr       = #{goodsAttr,jdbcType=VARCHAR},
+            goods_thumb      = #{goodsThumb,jdbcType=VARCHAR},
+            inventory_type   = #{inventoryType,jdbcType=TINYINT},
+            order_goods_id   = #{orderGoodsId,jdbcType=BIGINT},
+            quantity         = #{quantity,jdbcType=INTEGER},
+            admin_name       = #{adminName,jdbcType=VARCHAR},
+            add_time         = #{addTime,jdbcType=TIMESTAMP},
+            inventory_status = #{inventoryStatus,jdbcType=TINYINT},
+            supplier_linkman = #{supplierLinkman,jdbcType=VARCHAR},
+            huowei_name      = #{huoweiName,jdbcType=VARCHAR},
+            supplier_id      = #{supplierId,jdbcType=VARCHAR},
+            weight           = #{weight,jdbcType=INTEGER},
+            is_delete        = #{isDelete,jdbcType=TINYINT},
+            buy_id           = #{buyId,jdbcType=VARCHAR},
+            is_pandian       = #{isPandian,jdbcType=TINYINT},
+            buyer            = #{buyer,jdbcType=VARCHAR},
+            return_type      = #{returnType,jdbcType=TINYINT},
+            is_batch         = #{isBatch,jdbcType=TINYINT},
+            last_update_time = #{lastUpdateTime,jdbcType=TIMESTAMP},
+            bill_id          = #{billId,jdbcType=INTEGER},
+            turnover_no      = #{turnoverNo,jdbcType=VARCHAR},
+            remark           = #{remark,jdbcType=LONGVARCHAR}
         where inventory_id = #{inventoryId,jdbcType=INTEGER}
     </update>
     <update id="updateByPrimaryKey" parameterType="com.github.pagehelper.model.RsInventory">
         update rs_inventory
-        set site_id = #{siteId,jdbcType=INTEGER},
-        goods_id = #{goodsId,jdbcType=INTEGER},
-        attr_value_id = #{attrValueId,jdbcType=INTEGER},
-        goods_sn = #{goodsSn,jdbcType=VARCHAR},
-        goods_attr = #{goodsAttr,jdbcType=VARCHAR},
-        goods_thumb = #{goodsThumb,jdbcType=VARCHAR},
-        inventory_type = #{inventoryType,jdbcType=TINYINT},
-        order_goods_id = #{orderGoodsId,jdbcType=BIGINT},
-        quantity = #{quantity,jdbcType=INTEGER},
-        admin_name = #{adminName,jdbcType=VARCHAR},
-        add_time = #{addTime,jdbcType=TIMESTAMP},
-        inventory_status = #{inventoryStatus,jdbcType=TINYINT},
-        supplier_linkman = #{supplierLinkman,jdbcType=VARCHAR},
-        huowei_name = #{huoweiName,jdbcType=VARCHAR},
-        supplier_id = #{supplierId,jdbcType=VARCHAR},
-        weight = #{weight,jdbcType=INTEGER},
-        is_delete = #{isDelete,jdbcType=TINYINT},
-        buy_id = #{buyId,jdbcType=VARCHAR},
-        is_pandian = #{isPandian,jdbcType=TINYINT},
-        buyer = #{buyer,jdbcType=VARCHAR},
-        return_type = #{returnType,jdbcType=TINYINT},
-        is_batch = #{isBatch,jdbcType=TINYINT},
-        last_update_time = #{lastUpdateTime,jdbcType=TIMESTAMP},
-        bill_id = #{billId,jdbcType=INTEGER},
-        turnover_no = #{turnoverNo,jdbcType=VARCHAR}
+        set site_id          = #{siteId,jdbcType=INTEGER},
+            goods_id         = #{goodsId,jdbcType=INTEGER},
+            attr_value_id    = #{attrValueId,jdbcType=INTEGER},
+            goods_sn         = #{goodsSn,jdbcType=VARCHAR},
+            goods_attr       = #{goodsAttr,jdbcType=VARCHAR},
+            goods_thumb      = #{goodsThumb,jdbcType=VARCHAR},
+            inventory_type   = #{inventoryType,jdbcType=TINYINT},
+            order_goods_id   = #{orderGoodsId,jdbcType=BIGINT},
+            quantity         = #{quantity,jdbcType=INTEGER},
+            admin_name       = #{adminName,jdbcType=VARCHAR},
+            add_time         = #{addTime,jdbcType=TIMESTAMP},
+            inventory_status = #{inventoryStatus,jdbcType=TINYINT},
+            supplier_linkman = #{supplierLinkman,jdbcType=VARCHAR},
+            huowei_name      = #{huoweiName,jdbcType=VARCHAR},
+            supplier_id      = #{supplierId,jdbcType=VARCHAR},
+            weight           = #{weight,jdbcType=INTEGER},
+            is_delete        = #{isDelete,jdbcType=TINYINT},
+            buy_id           = #{buyId,jdbcType=VARCHAR},
+            is_pandian       = #{isPandian,jdbcType=TINYINT},
+            buyer            = #{buyer,jdbcType=VARCHAR},
+            return_type      = #{returnType,jdbcType=TINYINT},
+            is_batch         = #{isBatch,jdbcType=TINYINT},
+            last_update_time = #{lastUpdateTime,jdbcType=TIMESTAMP},
+            bill_id          = #{billId,jdbcType=INTEGER},
+            turnover_no      = #{turnoverNo,jdbcType=VARCHAR}
         where inventory_id = #{inventoryId,jdbcType=INTEGER}
     </update>
 
+    <insert id="batchInsert" parameterType="com.github.pagehelper.model.RsInventory">
+        insert into rs_inventory (attr_value_id, goods_sn, goods_attr, add_time, supplier_linkman, huowei_name, weight, remark, buy_id, buyer, return_type) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.attrValueId},#{item.goodsSn},#{item.goodsAttr},#{item.addTime},#{item.supplierLinkman},#{item.huoweiName},#{item.weight},#{item.remark},#{item.buyId},#{item.buyer},#{item.returnType})
+        </foreach>
+    </insert>
 </mapper>

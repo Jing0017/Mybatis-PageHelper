@@ -134,5 +134,7 @@ public interface RsInventoryMapper {
      */
     List<RsInventory> queryInventory(RsInventoryQuery rsInventoryQuery);
 
+    int batchInsert(@Param("list") List<RsInventory> rsInventories);
+
 
 }

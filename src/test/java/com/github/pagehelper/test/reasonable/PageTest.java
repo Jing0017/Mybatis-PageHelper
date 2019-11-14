@@ -24,6 +24,7 @@
 
 package com.github.pagehelper.test.reasonable;
 
+import cn.hutool.core.date.DateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.github.pagehelper.mapper.CountryMapper;
@@ -40,8 +41,10 @@ import com.github.pagehelper.util.MybatisReasonableHelper;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.ibatis.session.SqlSession;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -49,6 +52,9 @@ import java.util.concurrent.CountDownLatch;
 import static org.junit.Assert.*;
 
 public class PageTest {
+
+    private static final Logger LOGGER = Logger.getLogger(PageTest.class);
+
     /**
      * 使用Mapper接口调用时，使用PageHelper.startPage效果更好，不需要添加Mapper接口参数
      */
@@ -119,14 +125,14 @@ public class PageTest {
         SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
         RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
         try {
-            Date begin = DateUtils.parseDate("2019-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
-            Date end = DateUtils.parseDate("2019-10-01 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date begin = DateUtils.parseDate("2019-11-12 00:00:00", "yyyy-MM-dd HH:mm:ss");
+            Date end = DateUtils.parseDate("2019-11-13 00:00:00", "yyyy-MM-dd HH:mm:ss");
             RsInventoryCondition condition = new RsInventoryCondition();
             condition.createCriteria().andAddTimeBetween(begin, end);
             condition.setSplitTimeField("add_time");
             condition.setSplitByType(false);
             condition.setSplitType(SplitDateType.DAY);
-            condition.setSplitSize(20);
+            condition.setSplitSize(0);
             PageHelper.startPage(1, 10);
             long start = System.currentTimeMillis();
             List<RsInventory> rsInventories = rsInventoryMapper.selectByExample(condition);
@@ -246,7 +252,7 @@ public class PageTest {
             }
             countDownLatch.await();
             System.out.println("spent:" + (System.currentTimeMillis() - start));
-            System.out.println("total:" + total.stream().mapToLong(item->item).sum());
+            System.out.println("total:" + total.stream().mapToLong(item -> item).sum());
 //            assertTrue(pageInfo.isUsingParallel());
 //            assertEquals(2, pageInfo.getParallelSize());
         } catch (Exception e) {
@@ -255,5 +261,51 @@ public class PageTest {
             sqlSession.close();
         }
 
+    }
+
+    @Test
+    public void createInventoryData() throws ParseException {
+        SqlSession sqlSession = MybatisReasonableHelper.getSqlSession();
+        RsInventoryMapper rsInventoryMapper = sqlSession.getMapper(RsInventoryMapper.class);
+        try {
+            for (int k = 0; k < 20; k++) {
+                List<RsInventory> list = Lists.newArrayList();
+                Date date = DateUtils.parseDate("2019-11-11 23:30:00", "yyyy-MM-dd HH:mm:ss");
+                for (int i = 0; i < 24; i++) {
+
+                    date = DateUtils.addHours(date, 1);
+                    list.clear();
+                    Date finalDate = date;
+                    insert(sqlSession, rsInventoryMapper, list, finalDate);
+                }
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        } finally {
+            sqlSession.close();
+        }
+    }
+
+    private void insert(SqlSession sqlSession, RsInventoryMapper rsInventoryMapper, List<RsInventory> list, Date date) {
+        for (int j = 0; j < 10000; j++) {
+            RsInventory rsInventory = new RsInventory();
+            rsInventory.setAddTime(date);
+            rsInventory.setRemark("");
+            rsInventory.setGoodsSn("aaa");
+            rsInventory.setGoodsAttr("L");
+            rsInventory.setAdminName("lisi");
+            rsInventory.setGoodsThumb("thumb");
+            rsInventory.setSupplierLinkman("link");
+            rsInventory.setHuoweiName("huowei");
+            rsInventory.setWeight(1);
+            rsInventory.setAttrValueId(1);
+            rsInventory.setBuyId("1");
+            rsInventory.setBuyer("buyer");
+            rsInventory.setReturnType((byte) 1);
+            list.add(rsInventory);
+        }
+        rsInventoryMapper.batchInsert(list);
+        sqlSession.commit();
+        LOGGER.info(String.format("insert %d data", list.size()));
     }
 }
