@@ -84,14 +84,15 @@ public class ReflectionUtil {
      * @return
      */
     private static ParallelPage mergedConfig(Object obj) {
+        ParallelPage finalPage;
         ParallelPage parallelConfigFromParam = getParallelConfigFromParam(obj);
         ParallelPage parallelConfigFromAnno = getParallelConfigFromAnno(obj);
         if (Objects.isNull(parallelConfigFromParam) && Objects.isNull(parallelConfigFromAnno)) {
-            return null;
+            finalPage = null;
         } else if (Objects.isNull(parallelConfigFromParam)) {
-            return parallelConfigFromAnno;
+            finalPage = parallelConfigFromAnno;
         } else if (Objects.isNull(parallelConfigFromAnno)) {
-            return parallelConfigFromParam;
+            finalPage = parallelConfigFromParam;
         } else {
             if (Objects.nonNull(parallelConfigFromParam.getSplitSize())) {
                 parallelConfigFromAnno.setSplitSize(parallelConfigFromParam.getSplitSize());
@@ -105,8 +106,24 @@ public class ReflectionUtil {
             if (Objects.nonNull(parallelConfigFromParam.getSplitTimeField())) {
                 parallelConfigFromAnno.setSplitTimeField(parallelConfigFromParam.getSplitTimeField());
             }
-            return parallelConfigFromAnno;
+            finalPage = parallelConfigFromAnno;
         }
+
+
+        if (Objects.nonNull(finalPage)) {
+            if (ObjectUtils.allNotNull(finalPage.getSplitSize(),
+                    finalPage.getSplitByType(),
+                    finalPage.getSplitTimeField(),
+                    finalPage.getSplitType())) {
+                if (finalPage.getSplitSize() <= 0) {
+                    finalPage.setSplitSize(Runtime.getRuntime().availableProcessors());
+                    return finalPage;
+                }
+            } else {
+                return null;
+            }
+        }
+        return finalPage;
     }
 
 
@@ -122,11 +139,6 @@ public class ReflectionUtil {
         Boolean splitByType = (Boolean) ReflectUtil.getFieldValue(obj, "splitByType");
         String[] splitTimeField = (String[]) ReflectUtil.getFieldValue(obj, "splitTimeField");
         if (ObjectUtils.anyNotNull(splitSize, splitType, splitByType, splitTimeField)) {
-
-            if (Objects.isNull(splitSize) || splitSize <= 0) {
-                splitSize = Runtime.getRuntime().availableProcessors();
-            }
-
             return ParallelPage.createPage(splitSize, splitType, splitByType, splitTimeField);
         } else {
             return null;
@@ -143,9 +155,6 @@ public class ReflectionUtil {
         Class<?> clazz = obj.getClass();
         ParallelCount parallelCount = clazz.getDeclaredAnnotation(ParallelCount.class);
         if (Objects.nonNull(parallelCount)) {
-            if (parallelCount.size() <= 0) {
-                return ParallelPage.createPage(Runtime.getRuntime().availableProcessors(), parallelCount.type(), parallelCount.splitByType(), parallelCount.splitTimeField());
-            }
             return ParallelPage.createPage(parallelCount.size(), parallelCount.type(), parallelCount.splitByType(), parallelCount.splitTimeField());
         }
         return null;
