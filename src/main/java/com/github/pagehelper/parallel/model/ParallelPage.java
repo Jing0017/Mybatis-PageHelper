@@ -33,6 +33,11 @@ public class ParallelPage implements Serializable {
      */
     protected String[] splitTimeField;
 
+    public ParallelPage() {
+        splitByType = false;
+        splitType = SplitDateType.DAY;
+    }
+
     public static ParallelPage createPage(Integer size, SplitDateType type, Boolean splitByType, String[] splitTimeField) {
         ParallelPage parallelPage = new ParallelPage();
         parallelPage.setSplitSize(size);
